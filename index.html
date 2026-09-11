@@ -191,8 +191,8 @@
             <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">로그인</button>
             <button class="tab-btn" id="tabSignup" onclick="switchTab('signup')">회원가입</button>
         </div>
-        <input class="pixel-input" type="text" id="authUsername" placeholder="아이디 (영문/숫자 3~15자)" autocomplete="username">
-        <input class="pixel-input" type="password" id="authPassword" placeholder="비밀번호 (6자 이상)" autocomplete="current-password" onkeypress="if(event.key==='Enter') handleAuthSubmit()">
+        <input class="pixel-input" type="text" id="authUsername" placeholder="아이디" autocomplete="username">
+        <input class="pixel-input" type="password" id="authPassword" placeholder="비밀번호" autocomplete="current-password" onkeypress="if(event.key==='Enter') handleAuthSubmit()">
         <div class="error-msg" id="authError"></div>
         <button class="btn-main pixel-btn" style="width:100%; padding:16px;" id="authSubmitBtn" onclick="handleAuthSubmit()">로그인</button>
     </div>
@@ -258,7 +258,7 @@
                             <option value="3" selected>3개</option>
                             <option value="5">5개</option>
                             <option value="10">10개</option>
-                            <option value="20">20개 (극악)</option>
+                            <option value="20">20개</option>
                         </select>
                     </div>
                     <button class="btn-main pixel-btn" id="actionBtn" onclick="handleActionButton()">GAME START</button>
@@ -313,7 +313,7 @@
                 <div class="board-container">
                     <div class="slot-machine">
                         <div class="slot-grid" id="slotGrid"></div>
-                        <div class="slot-result" id="slotResult">가운데 줄 5칸을 맞춰보세요</div>
+                        <div class="slot-result" id="slotResult"></div>
                         <div class="paytable">🍒3=2배 4=4배 5=8배 ・ 🍋3=3배 4=6배 5=12배 ・ 🔔3=5배 4=10배 5=20배<br>⭐3=8배 4=16배 5=32배 ・ 💎3=15배 4=30배 5=60배 ・ 7️⃣3=25배 4=50배 5=100배</div>
                     </div>
                 </div>
