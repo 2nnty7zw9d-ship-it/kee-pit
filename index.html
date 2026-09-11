@@ -324,8 +324,8 @@
                 <div class="board-container">
                     <div class="slot-machine">
                         <div class="slot-grid" id="slotGrid"></div>
-                        <div class="slot-result" id="slotResult">가운데 줄 5칸을 맞춰보세요</div>
-                        <div class="paytable">🍒3=2배 4=4배 5=8배 ・ 🍋3=3배 4=6배 5=12배 ・ 🔔3=5배 4=10배 5=20배<br>⭐3=8배 4=16배 5=32배 ・ 💎3=15배 4=30배 5=60배 ・ 7️⃣3=25배 4=50배 5=100배</div>
+                        <div class="slot-result" id="slotResult">가로 3줄 + V + Λ, 총 5개 라인 중 3연속 이상을 노려보세요</div>
+                        <div class="paytable">🍒3=2배 4=4배 5=8배 ・ 🍋3=3배 4=6배 5=12배 ・ 🔔3=5배 4=10배 5=20배<br>⭐3=8배 4=16배 5=32배 ・ 💎3=15배 4=30배 5=60배 ・ 7️⃣3=25배 4=50배 5=100배<br><span style="color:var(--gold)">여러 라인이 동시에 맞으면 배율끼리 곱연산!</span></div>
                     </div>
                 </div>
             </div>
@@ -799,7 +799,7 @@
     }
 
     // ==========================================
-    // 슬롯머신 게임 (3행 5열, 가운데 줄 페이라인)
+    // 슬롯머신 게임 (3행 5열, 5개 페이라인: 상단/중단/하단/V/Λ)
     // ==========================================
     const SLOT_SYMBOLS = [
         { symbol: '🍒', weight: 30, pay: { 3: 2, 4: 4, 5: 8 } },
@@ -810,6 +810,15 @@
         { symbol: '7️⃣', weight: 4,  pay: { 3: 25, 4: 50, 5: 100 } }
     ];
     const TOTAL_WEIGHT = SLOT_SYMBOLS.reduce((s, x) => s + x.weight, 0);
+
+    // 각 페이라인은 5개 컬럼(0~4)마다 어느 행(0~2)을 지나는지를 나타냄
+    const PAYLINES = [
+        { name: '상단',   rows: [0, 0, 0, 0, 0] },
+        { name: '중단',   rows: [1, 1, 1, 1, 1] },
+        { name: '하단',   rows: [2, 2, 2, 2, 2] },
+        { name: 'V',      rows: [0, 1, 2, 1, 0] },
+        { name: 'Λ',      rows: [2, 1, 0, 1, 2] }
+    ];
 
     function pickRandomSymbol() {
         let r = Math.random() * TOTAL_WEIGHT;
@@ -833,30 +842,53 @@
         renderSlotGrid();
     }
 
-    function renderSlotGrid(matchCount = 0) {
+    function renderSlotGrid(winCells = []) {
         const gridEl = document.getElementById('slotGrid');
         gridEl.innerHTML = '';
+        const winSet = new Set(winCells.map(c => `${c.row}-${c.col}`));
         for (let row = 0; row < 3; row++) {
             for (let col = 0; col < 5; col++) {
                 const cell = document.createElement('div');
                 cell.classList.add('slot-cell');
-                if (row === 1 && col < matchCount) cell.classList.add('payline');
+                if (winSet.has(`${row}-${col}`)) cell.classList.add('payline');
                 cell.innerText = slotGridData[row][col];
                 gridEl.appendChild(cell);
             }
         }
     }
 
-    function evaluateSlotLine(line) {
-        // 왼쪽부터 연속 동일 심볼 개수 계산
-        let count = 1;
-        for (let i = 1; i < line.length; i++) {
-            if (line[i] === line[0]) count++; else break;
+    // 한 페이라인(길이 5의 심볼 배열)에서 왼쪽 정렬 여부와 상관없이
+    // 가장 긴 "연속 동일 심볼" 구간을 찾는다 (3개 이상이어야 인정)
+    function findBestRun(line) {
+        let bestLen = 0, bestSymbol = null, bestStart = 0;
+        let i = 0;
+        while (i < line.length) {
+            let j = i;
+            while (j < line.length && line[j] === line[i]) j++;
+            const runLen = j - i;
+            if (runLen > bestLen) { bestLen = runLen; bestSymbol = line[i]; bestStart = i; }
+            i = j;
         }
-        if (count < 3) return { count: 0, symbol: null, multiplier: 0 };
-        const symbolData = SLOT_SYMBOLS.find(s => s.symbol === line[0]);
-        const multiplier = symbolData.pay[count] || 0;
-        return { count, symbol: line[0], multiplier };
+        return { len: bestLen, symbol: bestSymbol, start: bestStart };
+    }
+
+    // 5개 페이라인을 전부 검사해서, 3연속 이상 맞은 라인들을 모두 찾는다
+    function evaluateAllPaylines(grid) {
+        const wins = [];
+        for (const line of PAYLINES) {
+            const symbols = line.rows.map((r, c) => grid[r][c]);
+            const run = findBestRun(symbols);
+            if (run.len < 3) continue;
+            const symbolData = SLOT_SYMBOLS.find(s => s.symbol === run.symbol);
+            const multiplier = symbolData.pay[run.len] || 0;
+            if (multiplier <= 0) continue;
+            const cells = [];
+            for (let c = run.start; c < run.start + run.len; c++) {
+                cells.push({ row: line.rows[c], col: c });
+            }
+            wins.push({ lineName: line.name, symbol: run.symbol, count: run.len, multiplier, cells });
+        }
+        return wins;
     }
 
     window.slotSpin = async function() {
@@ -873,6 +905,7 @@
 
         // 최종 결과를 미리 결정 (연출용, 계산은 다 멈춘 뒤에만 수행)
         const finalGrid = [];
+
         for (let row = 0; row < 3; row++) {
             const r = [];
             for (let col = 0; col < 5; col++) r.push(pickRandomSymbol());
@@ -915,18 +948,24 @@
         clearInterval(flickerTimer);
         slotGridData = finalGrid;
 
-        // 다섯 줄이 모두 멈춘 뒤에만 결과 계산
-        const middleRow = slotGridData[1];
-        const { count, symbol, multiplier } = evaluateSlotLine(middleRow);
-        renderSlotGrid(count);
+        // 다섯 줄(상단/중단/하단/V/Λ)이 모두 멈춘 뒤에만 결과 계산
+        const wins = evaluateAllPaylines(slotGridData);
 
-        if (multiplier > 0) {
-            const winAmount = bet * multiplier;
+        if (wins.length > 0) {
+            const totalMultiplier = wins.reduce((acc, w) => acc * w.multiplier, 1);
+            const winAmount = bet * totalMultiplier;
+            const winCells = wins.flatMap(w => w.cells);
+            renderSlotGrid(winCells);
+
             balance += winAmount;
             await syncBalanceToDB(); updateBalanceUI();
-            document.getElementById('slotResult').innerText = `🎉 ${symbol} ${count}개 매치! ${winAmount.toLocaleString()} kee 획득! (${multiplier}배)`;
+
+            const detail = wins.map(w => `${w.lineName}라인 ${w.symbol}×${w.count}(${w.multiplier}배)`).join(' × ');
+            const comboText = wins.length > 1 ? ` [${wins.length}라인 콤보!]` : '';
+            document.getElementById('slotResult').innerText = `🎉 ${detail} = 총 ${totalMultiplier}배! ${winAmount.toLocaleString()} kee 획득!${comboText}`;
             document.getElementById('slotResult').style.color = 'var(--gold)';
         } else {
+            renderSlotGrid([]);
             document.getElementById('slotResult').innerText = `💨 꽝! ${bet.toLocaleString()} kee 잃음`;
             document.getElementById('slotResult').style.color = 'var(--pink)';
         }
