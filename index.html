@@ -216,6 +216,19 @@
     .mine-bar { position:relative; width:100%; height:50px; background:var(--ink); border:4px solid #000; margin:6px 0 16px; overflow:hidden; }
     .mine-target { position:absolute; top:0; bottom:0; left:42%; width:16%; background: rgba(249,226,175,0.35); border-left:3px solid var(--gold); border-right:3px solid var(--gold); }
     .mine-marker { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:1.7rem; }
+
+    /* ===== 마켓 (Stocks & Coins) ===== */
+    .market-list { display:flex; flex-direction:column; gap:12px; width:100%; }
+    .market-row { display:flex; justify-content:space-between; align-items:center; gap:10px; background:var(--panel-light); border:3px solid #000; padding:12px; flex-wrap:wrap; }
+    .market-name { font-size:1.1rem; color:var(--text-color); }
+    .market-ticker { font-size:0.7rem; color:var(--text-muted); font-family:'Press Start 2P', monospace; }
+    .market-price { font-size:1.2rem; color:var(--gold); margin-top:4px; }
+    .market-change { font-size:0.8rem; margin-left:6px; font-family:'VT323', monospace; }
+    .market-change.up { color:#8fd48f; }
+    .market-change.down { color:var(--pink); }
+    .market-holding { font-size:0.9rem; color:var(--text-muted); margin-top:4px; }
+    .market-actions { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+    .market-amount { width:90px; padding:8px; font-size:1rem; }
 </style>
 </head>
 <body>
@@ -296,6 +309,10 @@
                     <div class="lobby-card" onclick="showView('roulette')">
                         <div class="icon">🔴</div>
                         <div class="name">ROULETTE</div>
+                    </div>
+                    <div class="lobby-card" onclick="showView('market')">
+                        <div class="icon">📈</div>
+                        <div class="name">MARKET</div>
                     </div>
                 </div>
             </div>
@@ -426,6 +443,19 @@
                 </div>
             </div>
 
+            <!-- 마켓 -->
+            <div id="marketView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
+                <button class="back-btn pixel-btn" onclick="exitToLobby('market')">← LOBBY</button>
+                <div class="tabs" style="max-width:320px;">
+                    <button class="tab-btn active" id="marketTabStocks" onclick="switchMarketTab('stocks')">STOCKS</button>
+                    <button class="tab-btn" id="marketTabCoins" onclick="switchMarketTab('coins')">COINS</button>
+                </div>
+                <div class="board-container">
+                    <div class="market-list" id="stockList"></div>
+                    <div class="market-list hidden" id="coinList"></div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -549,9 +579,11 @@
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     currentUser = data.username; balance = data.balance;
+                    marketPortfolio = data.portfolio || {};
                 } else {
                     currentUser = user.email.replace(FAKE_EMAIL_DOMAIN, '');
                     balance = INITIAL_BALANCE;
+                    marketPortfolio = {};
                     await db.ref('users/' + currentUid).set({ username: currentUser, balance });
                 }
                 document.getElementById('authModal').classList.add('hidden');
@@ -692,9 +724,11 @@
         document.getElementById('slotsView').classList.toggle('hidden', view !== 'slots');
         document.getElementById('horseView').classList.toggle('hidden', view !== 'horse');
         document.getElementById('rouletteView').classList.toggle('hidden', view !== 'roulette');
+        document.getElementById('marketView').classList.toggle('hidden', view !== 'market');
         if (view === 'slots') initSlotGrid();
         if (view === 'horse') initHorseView();
         if (view === 'roulette') initRouletteView();
+        if (view === 'market') initMarketView();
     };
 
     window.exitToLobby = function(from) {
@@ -1331,6 +1365,143 @@
 
         rouletteSpinning = false;
         document.getElementById('rouletteSpinBtn').disabled = false;
+    };
+
+    // ==========================================
+    // 마켓 (Stocks & Coins) - 지갑 시간 기반 5분 단위 가격, 24시간 상시 반영
+    // ==========================================
+    const MARKET_EPOCH_MS = 5 * 60 * 1000; // 5분
+    const STOCKS = [
+        { symbol: 'AAPL', name: 'Apple',     base: 195,   volatility: 0.06, seed: 11 },
+        { symbol: 'MSFT', name: 'Microsoft', base: 415,   volatility: 0.06, seed: 23 },
+        { symbol: 'TSLA', name: 'Tesla',     base: 250,   volatility: 0.10, seed: 37 },
+        { symbol: 'AMZN', name: 'Amazon',    base: 185,   volatility: 0.08, seed: 41 }
+    ];
+    const COINS = [
+        { symbol: 'BTC',  name: 'Bitcoin',  base: 62000, volatility: 0.35, seed: 53 },
+        { symbol: 'ETH',  name: 'Ethereum', base: 3100,  volatility: 0.40, seed: 61 },
+        { symbol: 'SOL',  name: 'Solana',   base: 145,   volatility: 0.50, seed: 73 },
+        { symbol: 'DOGE', name: 'Dogecoin', base: 0.16,  volatility: 0.60, seed: 83 }
+    ];
+    const ALL_MARKET = [...STOCKS, ...COINS];
+
+    let marketPortfolio = {};
+    let lastMarketEpoch = null;
+    let marketTimerId = null;
+
+    function marketSeededRandom(seed) {
+        let t = seed + 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+
+    function currentMarketEpoch() {
+        return Math.floor(Date.now() / MARKET_EPOCH_MS);
+    }
+
+    // 실제 시각(epoch) 기반으로 계산되므로, 페이지를 안 열어놔도
+    // 다시 켰을 때 지난 시간만큼 자연스럽게 가격이 반영됨 (24시간 상시 반영)
+    function priceAtEpoch(asset, epoch) {
+        const s = asset.seed;
+        const wave = Math.sin(epoch / 37 + s) * 0.5 + Math.sin(epoch / 91 + s * 2) * 0.3 + Math.sin(epoch / 13 + s * 3) * 0.2;
+        const noise = (marketSeededRandom(s * 100003 + epoch) - 0.5) * 2;
+        const pct = wave * asset.volatility * 0.6 + noise * asset.volatility * 0.4;
+        return Math.max(0.0001, asset.base * (1 + pct));
+    }
+
+    function formatPrice(p) {
+        if (p >= 1000) return p.toLocaleString(undefined, { maximumFractionDigits: 2 });
+        if (p >= 1) return p.toFixed(2);
+        return p.toFixed(4);
+    }
+
+    function initMarketView() {
+        lastMarketEpoch = currentMarketEpoch();
+        renderMarketLists();
+        if (!marketTimerId) {
+            marketTimerId = setInterval(() => {
+                const e = currentMarketEpoch();
+                if (e !== lastMarketEpoch) {
+                    lastMarketEpoch = e;
+                    renderMarketLists();
+                }
+            }, 15000);
+        }
+    }
+
+    function renderMarketList(containerId, assets) {
+        const container = document.getElementById(containerId);
+        const epoch = currentMarketEpoch();
+        container.innerHTML = assets.map(a => {
+            const price = priceAtEpoch(a, epoch);
+            const prevPrice = priceAtEpoch(a, epoch - 1);
+            const changePct = ((price - prevPrice) / prevPrice) * 100;
+            const up = changePct >= 0;
+            const qty = marketPortfolio[a.symbol] || 0;
+            const holdingValue = qty * price;
+            return `
+            <div class="market-row">
+                <div class="market-info">
+                    <div class="market-name">${a.name} <span class="market-ticker">${a.symbol}</span></div>
+                    <div class="market-price">$${formatPrice(price)}<span class="market-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</span></div>
+                    <div class="market-holding">Holding: ${qty.toFixed(4)} ($${holdingValue.toFixed(2)})</div>
+                </div>
+                <div class="market-actions">
+                    <input type="number" class="pixel-input market-amount" id="amt-${a.symbol}" placeholder="kee" min="1">
+                    <button class="btn-main pixel-btn" onclick="marketBuy('${a.symbol}')">BUY</button>
+                    <button class="btn-secondary pixel-btn" onclick="marketSellAll('${a.symbol}')">SELL ALL</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function renderMarketLists() {
+        renderMarketList('stockList', STOCKS);
+        renderMarketList('coinList', COINS);
+    }
+
+    window.switchMarketTab = function(tab) {
+        document.getElementById('stockList').classList.toggle('hidden', tab !== 'stocks');
+        document.getElementById('coinList').classList.toggle('hidden', tab !== 'coins');
+        document.getElementById('marketTabStocks').classList.toggle('active', tab === 'stocks');
+        document.getElementById('marketTabCoins').classList.toggle('active', tab === 'coins');
+    };
+
+    async function syncPortfolioToDB() {
+        if (!currentUid) return;
+        await db.ref('users/' + currentUid + '/portfolio').set(marketPortfolio);
+    }
+
+    window.marketBuy = async function(symbol) {
+        const input = document.getElementById(`amt-${symbol}`);
+        const amount = parseFloat(input.value);
+        if (isNaN(amount) || amount <= 0) return alert('Enter a valid amount.');
+        if (amount > balance) return alert('Not enough coins!');
+        const asset = ALL_MARKET.find(a => a.symbol === symbol);
+        const price = priceAtEpoch(asset, currentMarketEpoch());
+        const qty = amount / price;
+        balance -= amount;
+        marketPortfolio[symbol] = (marketPortfolio[symbol] || 0) + qty;
+        await syncBalanceToDB();
+        await syncPortfolioToDB();
+        updateBalanceUI();
+        input.value = '';
+        renderMarketLists();
+    };
+
+    window.marketSellAll = async function(symbol) {
+        const qty = marketPortfolio[symbol] || 0;
+        if (qty <= 0) return alert('No holdings to sell.');
+        const asset = ALL_MARKET.find(a => a.symbol === symbol);
+        const price = priceAtEpoch(asset, currentMarketEpoch());
+        const proceeds = qty * price;
+        balance += proceeds;
+        marketPortfolio[symbol] = 0;
+        await syncBalanceToDB();
+        await syncPortfolioToDB();
+        updateBalanceUI();
+        renderMarketLists();
     };
 </script>
 </body>
