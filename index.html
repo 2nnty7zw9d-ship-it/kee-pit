@@ -1400,9 +1400,9 @@
     };
 
     // ==========================================
-    // 마켓 (Stocks & Coins) - 지갑 시간 기반 5분 단위 가격, 24시간 상시 반영
+    // 마켓 (Stocks & Coins) - 지갑 시간 기반 1분 단위 가격, 24시간 상시 반영
     // ==========================================
-    const MARKET_EPOCH_MS = 5 * 60 * 1000; // 5분
+    const MARKET_EPOCH_MS = 60 * 1000; // 1분
     const STOCKS = [
         { symbol: 'AAPL', name: 'Apple',     base: 195,   volatility: 0.06, seed: 11 },
         { symbol: 'MSFT', name: 'Microsoft', base: 415,   volatility: 0.06, seed: 23 },
