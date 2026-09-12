@@ -29,7 +29,7 @@
         color: var(--text-color);
         min-height: 100vh;
         display: flex; justify-content: center; align-items: flex-start;
-        padding: 20px;
+        padding: 46px 20px 20px;
         font-family: 'VT323', monospace;
         font-size: 1.15rem;
         image-rendering: pixelated;
@@ -229,9 +229,34 @@
     .market-holding { font-size:0.9rem; color:var(--text-muted); margin-top:4px; }
     .market-actions { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
     .market-amount { width:90px; padding:8px; font-size:1rem; }
+
+    /* ===== Stock Ticker (always-on top bar) ===== */
+    .stock-ticker {
+        position: fixed; top:0; left:0; right:0; height:30px; z-index:2000;
+        background: var(--ink); border-bottom:3px solid var(--gold);
+        display:flex; align-items:center; overflow:hidden; white-space:nowrap;
+    }
+    .stock-ticker-track {
+        display:inline-flex; gap:36px; padding-left:100%;
+        animation: tickerScroll 22s linear infinite;
+    }
+    .stock-ticker-item {
+        font-family:'Press Start 2P', monospace; font-size:0.55rem; color: var(--text-color);
+        display:inline-flex; align-items:center; gap:6px;
+    }
+    .stock-ticker-item .up { color:#8fd48f; }
+    .stock-ticker-item .down { color: var(--pink); }
+    @keyframes tickerScroll {
+        from { transform: translateX(0); }
+        to { transform: translateX(-100%); }
+    }
 </style>
 </head>
 <body>
+
+<div id="stockTicker" class="stock-ticker hidden">
+    <div class="stock-ticker-track" id="stockTickerTrack"></div>
+</div>
 
 <div id="authModal" class="modal-overlay">
     <div class="modal-content">
@@ -580,6 +605,11 @@
                     const data = snapshot.val();
                     currentUser = data.username; balance = data.balance;
                     marketPortfolio = data.portfolio || {};
+                    Object.keys(marketPortfolio).forEach(sym => {
+                        if (typeof marketPortfolio[sym] === 'number') {
+                            marketPortfolio[sym] = { qty: marketPortfolio[sym], avgCost: 0 };
+                        }
+                    });
                 } else {
                     currentUser = user.email.replace(FAKE_EMAIL_DOMAIN, '');
                     balance = INITIAL_BALANCE;
@@ -592,6 +622,7 @@
                 updateBalanceUI();
                 showView('lobby');
                 startLeaderboardSync();
+                startStockTicker();
             } catch (error) {
                 console.error("Firebase DB Error:", error);
                 alert("Failed to connect to the database. Please check your Realtime Database rules.");
@@ -600,6 +631,7 @@
             currentUid = null; currentUser = null;
             document.getElementById('authModal').classList.remove('hidden');
             document.getElementById('gameContainer').style.display = 'none';
+            stopStockTicker();
         }
     });
 
@@ -1388,6 +1420,43 @@
     let marketPortfolio = {};
     let lastMarketEpoch = null;
     let marketTimerId = null;
+    let tickerTimerId = null;
+
+    // ===== Stock Ticker (always visible top bar) =====
+    function renderStockTicker() {
+        const tickerEl = document.getElementById('stockTicker');
+        const trackEl = document.getElementById('stockTickerTrack');
+        if (!currentUid) { tickerEl.classList.add('hidden'); return; }
+
+        const epoch = currentMarketEpoch();
+        const owned = ALL_MARKET.filter(a => (marketPortfolio[a.symbol] && marketPortfolio[a.symbol].qty > 0));
+
+        if (owned.length === 0) {
+            trackEl.innerHTML = `<span class="stock-ticker-item">NO STOCKS OWNED — VISIT MARKET TO BUY</span>`;
+        } else {
+            trackEl.innerHTML = owned.map(a => {
+                const price = priceAtEpoch(a, epoch);
+                const prevPrice = priceAtEpoch(a, epoch - 1);
+                const changePct = ((price - prevPrice) / prevPrice) * 100;
+                const up = changePct >= 0;
+                const qty = marketPortfolio[a.symbol].qty;
+                return `<span class="stock-ticker-item">${a.symbol} $${formatPrice(price)} <span class="${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</span> · ${qty.toFixed(4)} SH</span>`;
+            }).join('');
+        }
+        tickerEl.classList.remove('hidden');
+    }
+
+    function startStockTicker() {
+        renderStockTicker();
+        if (!tickerTimerId) {
+            tickerTimerId = setInterval(renderStockTicker, 15000);
+        }
+    }
+
+    function stopStockTicker() {
+        if (tickerTimerId) { clearInterval(tickerTimerId); tickerTimerId = null; }
+        document.getElementById('stockTicker').classList.add('hidden');
+    }
 
     function marketSeededRandom(seed) {
         let t = seed + 0x6D2B79F5;
@@ -1438,14 +1507,24 @@
             const prevPrice = priceAtEpoch(a, epoch - 1);
             const changePct = ((price - prevPrice) / prevPrice) * 100;
             const up = changePct >= 0;
-            const qty = marketPortfolio[a.symbol] || 0;
+            const holding = marketPortfolio[a.symbol] || { qty: 0, avgCost: 0 };
+            const qty = holding.qty;
             const holdingValue = qty * price;
+
+            let holdingLine = 'No holdings';
+            if (qty > 0) {
+                const pnlPct = holding.avgCost > 0 ? ((price - holding.avgCost) / holding.avgCost) * 100 : 0;
+                const pnlAmount = (price - holding.avgCost) * qty;
+                const pnlUp = pnlAmount >= 0;
+                holdingLine = `${qty.toFixed(4)} ($${holdingValue.toFixed(2)}) · Buy $${formatPrice(holding.avgCost)} <span class="market-change ${pnlUp ? 'up' : 'down'}">${pnlUp ? '▲' : '▼'} ${Math.abs(pnlPct).toFixed(2)}% (${pnlAmount >= 0 ? '+' : '-'}$${Math.abs(pnlAmount).toFixed(2)})</span>`;
+            }
+
             return `
             <div class="market-row">
                 <div class="market-info">
                     <div class="market-name">${a.name} <span class="market-ticker">${a.symbol}</span></div>
                     <div class="market-price">$${formatPrice(price)}<span class="market-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</span></div>
-                    <div class="market-holding">Holding: ${qty.toFixed(4)} ($${holdingValue.toFixed(2)})</div>
+                    <div class="market-holding">${holdingLine}</div>
                 </div>
                 <div class="market-actions">
                     <input type="number" class="pixel-input market-amount" id="amt-${a.symbol}" placeholder="kee" min="1">
@@ -1481,27 +1560,32 @@
         const asset = ALL_MARKET.find(a => a.symbol === symbol);
         const price = priceAtEpoch(asset, currentMarketEpoch());
         const qty = amount / price;
+        const holding = marketPortfolio[symbol] || { qty: 0, avgCost: 0 };
+        const newQty = holding.qty + qty;
+        const newAvgCost = (holding.qty * holding.avgCost + qty * price) / newQty;
+        marketPortfolio[symbol] = { qty: newQty, avgCost: newAvgCost };
         balance -= amount;
-        marketPortfolio[symbol] = (marketPortfolio[symbol] || 0) + qty;
         await syncBalanceToDB();
         await syncPortfolioToDB();
         updateBalanceUI();
         input.value = '';
         renderMarketLists();
+        renderStockTicker();
     };
 
     window.marketSellAll = async function(symbol) {
-        const qty = marketPortfolio[symbol] || 0;
-        if (qty <= 0) return alert('No holdings to sell.');
+        const holding = marketPortfolio[symbol] || { qty: 0, avgCost: 0 };
+        if (holding.qty <= 0) return alert('No holdings to sell.');
         const asset = ALL_MARKET.find(a => a.symbol === symbol);
         const price = priceAtEpoch(asset, currentMarketEpoch());
-        const proceeds = qty * price;
+        const proceeds = holding.qty * price;
         balance += proceeds;
-        marketPortfolio[symbol] = 0;
+        marketPortfolio[symbol] = { qty: 0, avgCost: 0 };
         await syncBalanceToDB();
         await syncPortfolioToDB();
         updateBalanceUI();
         renderMarketLists();
+        renderStockTicker();
     };
 </script>
 </body>
