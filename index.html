@@ -199,7 +199,7 @@
     .horse-lane { position:relative; height:38px; background: var(--panel-light); border:3px solid #000; overflow:hidden; }
     .horse-lane .flag { position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:1.1rem; z-index:1; }
     .horse-emoji { position:absolute; left:0; top:50%; transform:translateY(-50%); font-size:1.5rem; }
-    .horse-emoji.running { animation: horseBob .22s ease-in-out infinite alternate; }
+    .horse-emoji.running { animation: horseBob .32s ease-in-out infinite alternate; }
     @keyframes horseBob { 0%{ transform:translateY(-50%) scaleX(1); } 100%{ transform:translateY(-58%) scaleX(1.06); } }
 
     /* ===== 룰렛 ===== */
@@ -1119,7 +1119,7 @@
         renderHorseTrack();
         await sleep(50);
 
-        const durations = HORSES.map((_, i) => i === winnerIdx ? 2.2 : 2.5 + Math.random() * 0.9);
+        const durations = HORSES.map((_, i) => i === winnerIdx ? 4.5 : 4.9 + Math.random() * 1.6);
         HORSES.forEach((_, i) => {
             const el = document.getElementById(`horse-${i}`);
             el.classList.add('running');
