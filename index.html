@@ -6,7 +6,7 @@
 <title>KEE-PIT ARCADE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Cinzel:wght@600;700&family=Baloo+2:wght@600;700&display=swap" rel="stylesheet">
 <style>
     :root {
         --bg-color: #181825;
@@ -250,6 +250,117 @@
         from { transform: translateX(0); }
         to { transform: translateX(-100%); }
     }
+
+    /* ================================================
+       테마 (Shop에서 구매/장착 가능)
+       ================================================ */
+    .theme-swatch { display:flex; gap:4px; }
+    .theme-swatch span { width:16px; height:16px; border:2px solid #000; display:inline-block; }
+
+    /* 1. Cyberpunk Neon */
+    body.theme-cyberpunk {
+        --bg-color:#0B0E14; --panel-color:#12151f; --panel-light:#1b2030;
+        --pink:#F43F5E; --blue:#06B6D4; --gold:#7C3AED; --ink:#05060a;
+    }
+    body.theme-cyberpunk .header, body.theme-cyberpunk .pixel-panel,
+    body.theme-cyberpunk .board-container, body.theme-cyberpunk .modal-content,
+    body.theme-cyberpunk .lobby-card, body.theme-cyberpunk .leaderboard,
+    body.theme-cyberpunk .controls {
+        background-color: rgba(18,21,31,0.65); backdrop-filter: blur(6px);
+        box-shadow: 0 0 14px var(--blue), 4px 4px 0 0 #000;
+    }
+    body.theme-cyberpunk .brand {
+        animation: cyberGlitch 3.5s infinite;
+        text-shadow: 2px 0 var(--pink), -2px 0 var(--blue);
+    }
+    @keyframes cyberGlitch {
+        0%, 92%, 100% { transform: translate(0,0); text-shadow: 2px 0 var(--pink), -2px 0 var(--blue); }
+        93% { transform: translate(-2px,1px); }
+        95% { transform: translate(2px,-1px); text-shadow: -2px 0 var(--pink), 2px 0 var(--blue); }
+        97% { transform: translate(0,0); }
+    }
+
+    /* 2. Medieval Tavern */
+    body.theme-medieval {
+        --bg-color:#1C1917; --panel-color:#2b241d; --panel-light:#3a2f24;
+        --pink:#881337; --blue:#D97706; --gold:#F59E0B; --ink:#100d0a;
+        font-family: 'VT323', monospace;
+    }
+    body.theme-medieval h1, body.theme-medieval h2, body.theme-medieval h3,
+    body.theme-medieval .pixel-font, body.theme-medieval button, body.theme-medieval .tab-btn,
+    body.theme-medieval .lobby-card .name, body.theme-medieval .rank-money,
+    body.theme-medieval .balance-amount, body.theme-medieval .brand {
+        font-family: 'Cinzel', serif;
+    }
+    body.theme-medieval .header, body.theme-medieval .board-container,
+    body.theme-medieval .modal-content, body.theme-medieval .lobby-card,
+    body.theme-medieval .leaderboard, body.theme-medieval .controls {
+        background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.15) 0 3px, transparent 3px 8px);
+    }
+
+    /* 3. Lo-Fi Study & Chill */
+    body.theme-lofi {
+        --bg-color:#F3E9DC; --panel-color:#D8E2DC; --panel-light:#C0D6DF;
+        --pink:#5E503F; --blue:#C0D6DF; --gold:#5E503F; --ink:#EFE6D8;
+        --text-color:#3f3a33; --text-muted:#7a7266;
+    }
+    body.theme-lofi .pixel-panel, body.theme-lofi .header, body.theme-lofi .board-container,
+    body.theme-lofi .modal-content, body.theme-lofi .lobby-card, body.theme-lofi .leaderboard,
+    body.theme-lofi .controls, body.theme-lofi .pixel-input, body.theme-lofi .pixel-btn,
+    body.theme-lofi .tile, body.theme-lofi .slot-cell, body.theme-lofi .playing-card {
+        border-radius: 14px !important; box-shadow: 3px 3px 0 0 rgba(94,80,63,0.4) !important;
+    }
+    body.theme-lofi .pixel-btn:active:not(:disabled) { box-shadow: 1px 1px 0 0 rgba(94,80,63,0.4) !important; }
+
+    /* 4. Anime Arcade */
+    body.theme-anime {
+        --bg-color:#FFFFFF; --panel-color:#FCE7F3; --panel-light:#FBCFE8;
+        --pink:#F472B6; --blue:#A855F7; --gold:#FACC15; --ink:#3b0764;
+        --text-color:#3b0764; --text-muted:#7e22ce;
+    }
+    body.theme-anime h1, body.theme-anime h2, body.theme-anime h3,
+    body.theme-anime .pixel-font, body.theme-anime button, body.theme-anime .tab-btn,
+    body.theme-anime .lobby-card .name, body.theme-anime .rank-money,
+    body.theme-anime .balance-amount, body.theme-anime .brand {
+        font-family: 'Baloo 2', cursive;
+    }
+    body.theme-anime .pixel-panel, body.theme-anime .header, body.theme-anime .board-container,
+    body.theme-anime .modal-content, body.theme-anime .lobby-card, body.theme-anime .leaderboard,
+    body.theme-anime .controls, body.theme-anime .pixel-btn {
+        border-radius: 20px !important;
+    }
+
+    /* 5. K-Illegal Sportsbook Meme */
+    body.theme-k-illegal {
+        --bg-color:#000000; --panel-color:#111111; --panel-light:#1a1a1a;
+        --pink:#FF0000; --blue:#C0C0C0; --gold:#FFFF00; --ink:#000000;
+    }
+    body.theme-k-illegal .header, body.theme-k-illegal .board-container,
+    body.theme-k-illegal .lobby-card {
+        animation: kFlash 1s infinite;
+    }
+    @keyframes kFlash {
+        0%, 100% { box-shadow: 6px 6px 0 0 #FF0000; }
+        50% { box-shadow: 6px 6px 0 0 #FFFF00; }
+    }
+    .k-illegal-banner {
+        background:#FFFF00; color:#FF0000; font-weight:900; text-align:center;
+        padding:6px; border:3px solid #000; margin-bottom:14px; animation:kFlash 0.8s infinite;
+        font-size:0.9rem;
+    }
+
+    /* 6. North Korean Propaganda (satirical retro poster style) */
+    body.theme-nk-propaganda {
+        --bg-color:#1F2937; --panel-color:#4B5563; --panel-light:#5b6472;
+        --pink:#DC2626; --blue:#FDE047; --gold:#FDE047; --ink:#111827;
+    }
+    body.theme-nk-propaganda .header, body.theme-nk-propaganda .board-container,
+    body.theme-nk-propaganda .lobby-card, body.theme-nk-propaganda .modal-content {
+        background-image: repeating-linear-gradient(135deg, rgba(220,38,38,0.15) 0 10px, transparent 10px 20px);
+        border-color: var(--pink) !important;
+    }
+    body.theme-nk-propaganda .brand::before { content:"★ "; color: var(--pink); }
+
 </style>
 </head>
 <body>
@@ -288,15 +399,30 @@
     </div>
 </div>
 
+<div id="profileModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width:420px; text-align:left;">
+        <h2 style="text-align:center;">👤 PROFILE</h2>
+        <p class="modal-sub" style="text-align:center;" id="profileUsername"></p>
+
+        <h3 style="color:var(--blue); font-size:0.75rem; margin:14px 0 10px;">EQUIPPED THEME</h3>
+        <div id="profileThemeList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:20px;"></div>
+
+        <h3 style="color:var(--pink); font-size:0.75rem; margin-bottom:10px;">⚠️ DANGER ZONE</h3>
+        <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:14px;">Deleting your account is permanent. Your balance, portfolio, and progress will be lost forever.</p>
+        <button class="btn-main pixel-btn" style="width:100%; background:var(--pink); color:#000; margin-bottom:10px;" onclick="deleteAccount()">DELETE ACCOUNT</button>
+        <button class="btn-secondary pixel-btn" style="width:100%;" onclick="closeProfileModal()">CLOSE</button>
+    </div>
+</div>
+
 <div class="container" id="gameContainer" style="display:none;">
     <div class="header">
         <div class="balance-box">
             <span class="brand">🕹️ KEE-PIT</span>
-            <span class="balance-title">BALANCE</span>
+            <span class="balance-title" id="balanceTitleLabel">BALANCE</span>
             <span class="balance-amount">🪙 <span id="balanceDisplay">0</span> kee</span>
         </div>
         <div class="user-panel">
-            <span class="user-name" id="currentUserDisplay">P1</span>
+            <span class="user-name" id="currentUserDisplay" onclick="openProfileModal()" style="cursor:pointer;" title="Open profile">P1</span>
             <button class="btn-logout pixel-btn" onclick="openMineModal()">⛏️ MINE</button>
             <button class="btn-logout pixel-btn" onclick="logout()">LOGOUT</button>
         </div>
@@ -304,7 +430,7 @@
 
     <div class="main-layout">
         <div class="leaderboard">
-            <h3>🏆 HIGH SCORE</h3>
+            <h3 id="leaderboardTitle">🏆 HIGH SCORE</h3>
             <ul class="rank-list" id="rankList">
                 <li style="text-align:center; color:var(--text-muted); margin-top:20px;">Loading...</li>
             </ul>
@@ -314,10 +440,11 @@
 
             <!-- 로비 -->
             <div id="lobbyView">
+                <div id="themeBanner" class="k-illegal-banner hidden"></div>
                 <div class="lobby-grid">
                     <div class="lobby-card" onclick="showView('mines')">
                         <div class="icon">💣</div>
-                        <div class="name">MINES</div>
+                        <div class="name" id="mineCardName">MINES</div>
                     </div>
                     <div class="lobby-card" onclick="showView('blackjack')">
                         <div class="icon">🃏</div>
@@ -325,7 +452,7 @@
                     </div>
                     <div class="lobby-card" onclick="showView('slots')">
                         <div class="icon">🎰</div>
-                        <div class="name">SLOTS</div>
+                        <div class="name" id="slotsCardName">SLOTS</div>
                     </div>
                     <div class="lobby-card" onclick="showView('horse')">
                         <div class="icon">🐎</div>
@@ -492,10 +619,9 @@
                     <h3 style="color:var(--blue); font-size:0.85rem; margin-bottom:14px;">⛏️ MINE PICKAXE UPGRADE</h3>
                     <div class="market-list" id="pickaxeList"></div>
                 </div>
-                <div class="board-container" style="align-items:stretch; border-color:var(--pink);">
-                    <h3 style="color:var(--pink); font-size:0.85rem; margin-bottom:14px;">⚠️ DANGER ZONE</h3>
-                    <p style="color:var(--text-muted); margin-bottom:14px;">Deleting your account is permanent. Your balance, portfolio, and progress will be lost forever.</p>
-                    <button class="btn-main pixel-btn" style="background:var(--pink); color:#000;" onclick="deleteAccount()">DELETE ACCOUNT</button>
+                <div class="board-container" style="align-items:stretch;">
+                    <h3 style="color:var(--gold); font-size:0.85rem; margin-bottom:14px;">🎨 THEMES</h3>
+                    <div class="market-list" id="themeShopList"></div>
                 </div>
             </div>
 
@@ -623,6 +749,9 @@
                     const data = snapshot.val();
                     currentUser = data.username; balance = data.balance;
                     pickaxeLevel = data.pickaxeLevel || 0;
+                    ownedThemes = data.ownedThemes || ['classic'];
+                    if (!ownedThemes.includes('classic')) ownedThemes.unshift('classic');
+                    equippedTheme = data.equippedTheme || 'classic';
                     marketPortfolio = data.portfolio || {};
                     Object.keys(marketPortfolio).forEach(sym => {
                         if (typeof marketPortfolio[sym] === 'number') {
@@ -634,12 +763,15 @@
                     balance = INITIAL_BALANCE;
                     marketPortfolio = {};
                     pickaxeLevel = 0;
+                    ownedThemes = ['classic'];
+                    equippedTheme = 'classic';
                     await db.ref('users/' + currentUid).set({ username: currentUser, balance });
                 }
                 document.getElementById('authModal').classList.add('hidden');
                 document.getElementById('gameContainer').style.display = 'flex';
                 document.getElementById('currentUserDisplay').innerText = currentUser;
                 updateBalanceUI();
+                applyTheme(equippedTheme);
                 showView('lobby');
                 startLeaderboardSync();
                 startStockTicker();
@@ -652,6 +784,7 @@
             document.getElementById('authModal').classList.remove('hidden');
             document.getElementById('gameContainer').style.display = 'none';
             stopStockTicker();
+            document.body.className = '';
         }
     });
 
@@ -724,7 +857,7 @@
             balance += reward;
             await syncBalanceToDB();
             updateBalanceUI();
-            resultEl.innerText = `⛏️ HIT! +${reward.toLocaleString()} kee`;
+            resultEl.innerText = `⛏️ HIT! +${reward.toLocaleString()} kee${themedJackpotSuffix()}`;
             resultEl.style.color = 'var(--gold)';
         } else {
             resultEl.innerText = '💨 MISS';
@@ -799,6 +932,153 @@
         }
     };
 
+    // ==========================================
+    // 테마 (Shop에서 구매, Profile에서 장착)
+    // ==========================================
+    const THEMES = [
+        {
+            id: 'cyberpunk', name: 'CYBERPUNK NEON', price: 20000,
+            swatches: ['#0B0E14', '#7C3AED', '#06B6D4', '#F43F5E'],
+            labels: { balanceTitle: 'CREDITS', mineCardName: 'CYBER MINES', slotsCardName: 'NEON SLOTS' }
+        },
+        {
+            id: 'medieval', name: 'MEDIEVAL TAVERN', price: 20000,
+            swatches: ['#1C1917', '#F59E0B', '#881337', '#D97706'],
+            labels: { balanceTitle: '골드 (GOLD)', mineCardName: '마법 진지 탐색', slotsCardName: '운명의 수레바퀴' }
+        },
+        {
+            id: 'lofi', name: 'LO-FI STUDY & CHILL', price: 20000,
+            swatches: ['#F3E9DC', '#C0D6DF', '#D8E2DC', '#5E503F'],
+            labels: { balanceTitle: 'kee (포근한 포인트)' }
+        },
+        {
+            id: 'anime', name: 'ANIME ARCADE', price: 20000,
+            swatches: ['#F472B6', '#A855F7', '#FFFFFF', '#FACC15'],
+            labels: { mineCardName: '보물 상자 찾기' }, jackpotText: '대박! (FEVER TIME)'
+        },
+        {
+            id: 'k-illegal', name: 'K-ILLEGAL SPORTSBOOK', price: 20000,
+            swatches: ['#000000', '#FFFF00', '#FF0000', '#C0C0C0'],
+            labels: { mineCardName: '지뢰 징검다리', leaderboardTitle: '고액 배터 전광판' },
+            banner: '먹튀 검증 완료 ✓ · 첫충 30% 무한 지급'
+        },
+        {
+            id: 'nk-propaganda', name: 'RED STAR', price: 20000,
+            swatches: ['#1F2937', '#DC2626', '#FDE047', '#4B5563'],
+            labels: { balanceTitle: '공동 자산', slotsCardName: '생산력 슬롯', mineCardName: '지뢰 제거 작업' },
+            jackpotText: '인민의 위대한 승리!'
+        }
+    ];
+
+    let ownedThemes = ['classic'];
+    let equippedTheme = 'classic';
+
+    function getTheme(id) { return THEMES.find(t => t.id === id) || null; }
+
+    function applyTheme(id) {
+        equippedTheme = id;
+        document.body.className = id === 'classic' ? '' : ('theme-' + id);
+        const theme = getTheme(id);
+        const labels = (theme && theme.labels) || {};
+
+        document.getElementById('balanceTitleLabel').innerText = labels.balanceTitle || 'BALANCE';
+        document.getElementById('leaderboardTitle').innerText = '🏆 ' + (labels.leaderboardTitle || 'HIGH SCORE');
+        document.getElementById('mineCardName').innerText = labels.mineCardName || 'MINES';
+        document.getElementById('slotsCardName').innerText = labels.slotsCardName || 'SLOTS';
+
+        const bannerEl = document.getElementById('themeBanner');
+        if (theme && theme.banner) {
+            bannerEl.innerText = theme.banner;
+            bannerEl.classList.remove('hidden');
+        } else {
+            bannerEl.classList.add('hidden');
+        }
+    }
+
+    // 마인즈/슬롯 등 승리 메시지에 테마 잭팟 문구를 살짝 얹어주는 헬퍼
+    function themedJackpotSuffix() {
+        const theme = getTheme(equippedTheme);
+        return (theme && theme.jackpotText) ? ` ${theme.jackpotText}` : '';
+    }
+
+    async function syncThemeToDB() {
+        if (!currentUid) return;
+        await db.ref('users/' + currentUid).update({ ownedThemes, equippedTheme });
+    }
+
+    function renderThemeShop() {
+        const list = document.getElementById('themeShopList');
+        list.innerHTML = THEMES.map(theme => {
+            const owned = ownedThemes.includes(theme.id);
+            const swatchHtml = `<div class="theme-swatch">${theme.swatches.map(c => `<span style="background:${c};"></span>`).join('')}</div>`;
+            const actionHtml = owned
+                ? `<span style="color:var(--gold); font-family:'Press Start 2P', monospace; font-size:0.6rem;">OWNED</span>`
+                : `<button class="btn-main pixel-btn" onclick="buyTheme('${theme.id}')">BUY</button>`;
+            return `
+            <div class="market-row">
+                <div class="market-info">
+                    <div class="market-name">${theme.name}</div>
+                    <div class="market-price">${theme.price.toLocaleString()} kee</div>
+                    ${swatchHtml}
+                </div>
+                <div class="market-actions">${actionHtml}</div>
+            </div>`;
+        }).join('');
+    }
+
+    window.buyTheme = async function(themeId) {
+        if (ownedThemes.includes(themeId)) return;
+        const theme = getTheme(themeId);
+        if (!theme) return;
+        if (balance < theme.price) return alert('Not enough coins!');
+        balance -= theme.price;
+        ownedThemes.push(themeId);
+        await syncBalanceToDB();
+        await syncThemeToDB();
+        updateBalanceUI();
+        renderThemeShop();
+    };
+
+    // ===== Profile (테마 장착 + 계정 탈퇴) =====
+    window.openProfileModal = function() {
+        document.getElementById('profileUsername').innerText = currentUser;
+        renderProfileThemes();
+        document.getElementById('profileModal').classList.remove('hidden');
+    };
+
+    window.closeProfileModal = function() {
+        document.getElementById('profileModal').classList.add('hidden');
+    };
+
+    function renderProfileThemes() {
+        const list = document.getElementById('profileThemeList');
+        const allOwned = ['classic', ...ownedThemes.filter(id => id !== 'classic')];
+        list.innerHTML = allOwned.map(id => {
+            const theme = getTheme(id);
+            const name = theme ? theme.name : 'CLASSIC ARCADE';
+            const swatches = theme ? theme.swatches : ['#181825', '#F38BA8', '#89B4FA', '#F9E2AF'];
+            const active = equippedTheme === id;
+            return `
+            <div class="market-row" style="${active ? 'border-color:var(--gold);' : ''}">
+                <div class="market-info">
+                    <div class="market-name">${name}</div>
+                    <div class="theme-swatch">${swatches.map(c => `<span style="background:${c};"></span>`).join('')}</div>
+                </div>
+                <div class="market-actions">
+                    ${active
+                        ? `<span style="color:var(--gold); font-family:'Press Start 2P', monospace; font-size:0.6rem;">EQUIPPED</span>`
+                        : `<button class="btn-main pixel-btn" onclick="equipTheme('${id}')">EQUIP</button>`}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    window.equipTheme = async function(themeId) {
+        applyTheme(themeId);
+        await syncThemeToDB();
+        renderProfileThemes();
+    };
+
     async function syncBalanceToDB() {
         if (!currentUid) return;
         await db.ref('users/' + currentUid).update({ balance });
@@ -848,7 +1128,7 @@
         if (view === 'horse') initHorseView();
         if (view === 'roulette') initRouletteView();
         if (view === 'market') initMarketView();
-        if (view === 'shop') renderShop();
+        if (view === 'shop') { renderShop(); renderThemeShop(); }
     };
 
     window.exitToLobby = function(from) {
@@ -1284,7 +1564,7 @@
 
             const detail = wins.map(w => `${w.lineName} ${w.symbol}x${w.count}(x${w.multiplier})`).join(' × ');
             const comboText = wins.length > 1 ? ` [${wins.length}-LINE COMBO!]` : '';
-            document.getElementById('slotResult').innerText = `🎉 ${detail} = TOTAL x${totalMultiplier}! WON ${winAmount.toLocaleString()} kee!${comboText}`;
+            document.getElementById('slotResult').innerText = `🎉 ${detail} = TOTAL x${totalMultiplier}! WON ${winAmount.toLocaleString()} kee!${comboText}${themedJackpotSuffix()}`;
             document.getElementById('slotResult').style.color = 'var(--gold)';
         } else {
             renderSlotGrid([]);
