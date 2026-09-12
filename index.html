@@ -750,7 +750,7 @@
     function calculateMultiplier(gemsRevealed, totalMines) {
         if (gemsRevealed === 0) return 1.0;
         const prob = combination(GRID_SIZE - totalMines, gemsRevealed) / combination(GRID_SIZE, gemsRevealed);
-        return Math.max(1.01, Math.floor(((1 / prob) * 0.97) * 100) / 100);
+        return Math.max(1.01, Math.floor(((1 / prob) * 0.99) * 100) / 100);
     }
     window.handleActionButton = function() { state.isPlaying ? cashout() : startGame(); };
 
@@ -1004,12 +1004,12 @@
     // 슬롯머신 게임 (3행 5열, 8개 페이라인: 가로3 + 세로5)
     // ==========================================
     const SLOT_SYMBOLS = [
-        { symbol: '🍒', weight: 30, pay: { 3: 2, 4: 4, 5: 8 } },
-        { symbol: '🍋', weight: 24, pay: { 3: 3, 4: 6, 5: 12 } },
-        { symbol: '🔔', weight: 18, pay: { 3: 5, 4: 10, 5: 20 } },
-        { symbol: '⭐', weight: 12, pay: { 3: 8, 4: 16, 5: 32 } },
-        { symbol: '💎', weight: 8,  pay: { 3: 15, 4: 30, 5: 60 } },
-        { symbol: '7️⃣', weight: 4,  pay: { 3: 25, 4: 50, 5: 100 } }
+        { symbol: '🍒', weight: 30, pay: { 3: 1, 4: 2, 5: 4 } },
+        { symbol: '🍋', weight: 24, pay: { 3: 2, 4: 3, 5: 6 } },
+        { symbol: '🔔', weight: 18, pay: { 3: 3, 4: 5, 5: 10 } },
+        { symbol: '⭐', weight: 12, pay: { 3: 4, 4: 8, 5: 16 } },
+        { symbol: '💎', weight: 8,  pay: { 3: 7, 4: 14, 5: 28 } },
+        { symbol: '7️⃣', weight: 4,  pay: { 3: 12, 4: 25, 5: 50 } }
     ];
     const TOTAL_WEIGHT = SLOT_SYMBOLS.reduce((s, x) => s + x.weight, 0);
 
@@ -1185,7 +1185,7 @@
         { name: 'H5', weight: 8 }
     ];
     const HORSE_TOTAL_WEIGHT = HORSES.reduce((s, h) => s + h.weight, 0);
-    HORSES.forEach(h => { h.multiplier = Math.max(1.2, Math.round((HORSE_TOTAL_WEIGHT / h.weight) * 0.85 * 10) / 10); });
+    HORSES.forEach(h => { h.multiplier = Math.max(1.2, Math.round((HORSE_TOTAL_WEIGHT / h.weight) * 0.93 * 10) / 10); });
 
     let selectedHorse = 0;
     let raceInProgress = false;
