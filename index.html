@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KEE-PIT ARCADE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg-color: #181825;
+        --panel-color: #232534;
+        --panel-light: #2f3146;
+        --pink: #F38BA8;
+        --blue: #89B4FA;
+        --gold: #F9E2AF;
+        --text-color: #CDD6F4;
+        --text-muted: #9399B2;
+        --ink: #11121c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        background-color: var(--bg-color);
+        background-image:
+            linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+        background-size: 24px 24px;
+        color: var(--text-color);
+        min-height: 100vh;
+        display: flex; justify-content: center; align-items: flex-start;
+        padding: 20px;
+        font-family: 'VT323', monospace;
+        font-size: 1.15rem;
+        image-rendering: pixelated;
+    }
+    h1, h2, h3, .pixel-font, button, .tab-btn, .lobby-card .name, .rank-money, .balance-amount, .bj-result, .slot-result { font-family: 'Press Start 2P', monospace; }
+
+    /* ===== 공용 픽셀 프레임 ===== */
+    .pixel-panel { background: var(--panel-color); border: 4px solid #000; box-shadow: 6px 6px 0 0 #000; }
+    .pixel-btn {
+        border: 4px solid #000; box-shadow: 4px 4px 0 0 #000;
+        transition: transform .05s ease, box-shadow .05s ease;
+        cursor: pointer; image-rendering: pixelated;
+    }
+    .pixel-btn:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0 0 0 0 #000; }
+    .pixel-btn:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(40%); }
+    .pixel-input {
+        border: 4px solid #000; background: var(--ink); color: var(--text-color);
+        font-family: 'VT323', monospace; font-size: 1.3rem; outline: none;
+    }
+    .pixel-input:focus { border-color: var(--blue); }
+
+    .hidden { display: none !important; }
+
+    /* ===== 로그인/회원가입 모달 ===== */
+    .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background-color: rgba(8,8,14,0.92); display:flex; justify-content:center; align-items:center; z-index:1000; padding:16px; }
+    .modal-content { background-color: var(--panel-color); padding:32px 24px; width:90%; max-width:400px; text-align:center; border:4px solid #000; box-shadow:8px 8px 0 0 #000; }
+    .modal-content h2 { font-size:1.4rem; color: var(--gold); margin-bottom:14px; letter-spacing:1px; text-shadow:3px 3px 0 var(--pink); }
+    .modal-sub { color: var(--text-muted); font-size:1rem; margin-bottom:22px; line-height:1.5; }
+    .tabs { display:flex; margin-bottom:20px; border:4px solid #000; }
+    .tab-btn { flex:1; padding:12px 4px; background:var(--ink); color:var(--text-muted); border:none; cursor:pointer; font-size:0.65rem; }
+    .tab-btn.active { background:var(--pink); color:#000; }
+    .modal-content input.pixel-input { width:100%; padding:14px; margin-bottom:14px; text-align:center; }
+    .error-msg { color: var(--pink); font-size:0.95rem; min-height:20px; margin-bottom:10px; }
+
+    /* ===== 상단 아케이드 전광판 ===== */
+    .container { display:flex; flex-direction:column; gap:20px; width:100%; max-width:900px; }
+    .header {
+        background-color: var(--panel-color); padding:18px 20px; border:4px solid #000; box-shadow:6px 6px 0 0 #000;
+        display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;
+        position:relative; overflow:hidden;
+    }
+    .header::before {
+        content:"● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ●";
+        position:absolute; top:4px; left:8px; right:8px; letter-spacing:10px; font-size:6px;
+        color: var(--gold); opacity:0.55; white-space:nowrap; overflow:hidden;
+    }
+    .brand { font-size:1.1rem; color:var(--blue); text-shadow:2px 2px 0 var(--pink); letter-spacing:1px; margin-top:6px; }
+    .balance-box { display:flex; flex-direction:column; gap:6px; margin-top:6px; }
+    .balance-title { font-size:0.7rem; color: var(--text-muted); letter-spacing:1px; }
+    .balance-amount { font-size:1.1rem; color: var(--ink); background: var(--gold); border:3px solid #000; padding:6px 10px; display:inline-block; box-shadow:3px 3px 0 0 #000; }
+    .user-panel { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:6px; }
+    .user-name { font-family:'Press Start 2P', monospace; font-size:0.65rem; color: var(--gold); background:var(--ink); border:3px solid #000; padding:8px 10px; }
+    .btn-logout { background:var(--panel-light); border:3px solid #000; color:var(--text-color); padding:8px 10px; cursor:pointer; font-size:0.6rem; font-family:'Press Start 2P', monospace; box-shadow:3px 3px 0 0 #000; }
+    .btn-logout:active { transform:translate(3px,3px); box-shadow:0 0 0 0 #000; }
+
+    /* ===== 레이아웃 ===== */
+    .main-layout { display:flex; gap:20px; flex-direction:column; }
+    @media (min-width:768px) { .main-layout { flex-direction:row; } }
+
+    .leaderboard { background-color: var(--panel-color); padding:18px; border:4px solid #000; box-shadow:6px 6px 0 0 #000; flex:1; min-width:200px; display:flex; flex-direction:column; }
+    .leaderboard h3 { color: var(--blue); margin-bottom:14px; font-size:0.8rem; text-align:center; letter-spacing:1px; }
+    .rank-list { list-style:none; display:flex; flex-direction:column; gap:8px; overflow-y:auto; max-height:400px; }
+    .rank-item { display:flex; justify-content:space-between; align-items:center; background:var(--ink); padding:10px; border:2px solid #000; font-size:1rem; }
+    .rank-item.me { border-color: var(--gold); box-shadow:2px 2px 0 0 var(--gold); }
+    .rank-name { color: var(--text-color); font-family:'VT323', monospace; font-size:1.05rem; }
+    .rank-money { color: var(--gold); font-size:0.6rem; }
+
+    .game-area { display:flex; flex-direction:column; gap:20px; flex:2.5; }
+
+    /* ===== 로비 ===== */
+    .lobby-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:18px; }
+    .lobby-card { background-color: var(--panel-color); border:4px solid #000; box-shadow:6px 6px 0 0 #000; padding:26px 14px; text-align:center; cursor:pointer; transition:transform .05s, box-shadow .05s; }
+    .lobby-card:active { transform:translate(4px,4px); box-shadow:2px 2px 0 0 #000; }
+    .lobby-card .icon { font-size:2.4rem; margin-bottom:12px; filter:drop-shadow(3px 3px 0 #000); }
+    .lobby-card .name { font-size:0.85rem; color: var(--pink); margin-bottom:8px; }
+    .lobby-card .desc { font-size:1rem; color: var(--text-muted); }
+
+    .back-btn { background: var(--panel-light); border:3px solid #000; color: var(--text-color); padding:10px 14px; cursor:pointer; font-size:0.6rem; font-family:'Press Start 2P', monospace; align-self:flex-start; box-shadow:3px 3px 0 0 #000; }
+    .back-btn:active { transform:translate(3px,3px); box-shadow:0 0 0 0 #000; }
+
+    .controls { background-color: var(--panel-color); padding:18px; border:4px solid #000; box-shadow:6px 6px 0 0 #000; display:flex; gap:16px; flex-wrap:wrap; }
+    .input-group { display:flex; flex-direction:column; gap:8px; flex:1; min-width:130px; }
+    .input-group label { font-size:0.6rem; color: var(--text-muted); font-family:'Press Start 2P', monospace; letter-spacing:0.5px; }
+    .input-group input, .input-group select.pixel-input { padding:12px; }
+
+    .btn-main {
+        background-color: var(--gold); color: var(--ink); padding:14px; font-size:0.7rem;
+        flex:1; min-width:120px; margin-top:auto; letter-spacing:0.5px;
+    }
+    .btn-secondary {
+        background-color: var(--panel-light); color: var(--text-color); padding:14px; font-size:0.7rem;
+        flex:1; min-width:100px; margin-top:auto;
+    }
+
+    .board-container { background-color: var(--panel-color); padding:20px; border:4px solid #000; box-shadow:6px 6px 0 0 #000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+
+    /* ===== 마인즈 ===== */
+    .grid { display:grid; grid-template-columns:repeat(5, 1fr); grid-template-rows:repeat(5, 1fr); gap:8px; width:100%; max-width:340px; aspect-ratio:1; }
+    .tile {
+        background-color: var(--panel-light);
+        border-top:4px solid #4a4d6b; border-left:4px solid #4a4d6b;
+        border-bottom:4px solid #000; border-right:4px solid #000;
+        display:flex; justify-content:center; align-items:center; font-size:1.4rem;
+        cursor:pointer; user-select:none;
+        aspect-ratio:1; overflow:hidden; min-width:0; min-height:0;
+    }
+    .tile:hover:not(.revealed) { background-color: #3a3c56; }
+    .tile.revealed { cursor:default; border:4px solid #000; background: var(--ink); box-shadow: inset 3px 3px 0 rgba(0,0,0,0.6); }
+    .tile.gem { background-color: rgba(137,180,250,0.25); border-color:#000; box-shadow: inset 0 0 0 2px var(--blue); }
+    .tile.mine { background-color: rgba(243,139,168,0.3); border-color:#000; box-shadow: inset 0 0 0 2px var(--pink); }
+
+    .status-box { margin-bottom:15px; text-align:center; min-height:56px; display:flex; flex-direction:column; justify-content:center; gap:6px; }
+    .multiplier { font-size:1.3rem; color: var(--gold); font-family:'Press Start 2P', monospace; }
+    .next-multiplier { font-size:1rem; color: var(--text-muted); }
+    .message { font-family:'Press Start 2P', monospace; font-size:0.75rem; }
+    .message.win { color: var(--gold); }
+    .message.lose { color: var(--pink); }
+
+    #actionBtn { background: var(--gold); box-shadow:6px 6px 0 0 #000; }
+
+    /* ===== 블랙잭 ===== */
+    .bj-table { width:100%; display:flex; flex-direction:column; gap:20px; align-items:center; }
+    .bj-hand-label { font-size:0.65rem; font-family:'Press Start 2P', monospace; color: var(--text-muted); margin-bottom:10px; text-align:center; letter-spacing:1px; }
+    .bj-hand-value { color: var(--blue); }
+    .bj-cards { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; min-height:88px; }
+    .playing-card {
+        width:56px; height:80px; background:#f2f2f2; border:3px solid #000; border-radius:0;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        font-family:'VT323', monospace; font-weight:bold; font-size:1.6rem; box-shadow:3px 3px 0 0 #000;
+    }
+    .playing-card.red { color: var(--pink); }
+    .playing-card.black { color: var(--ink); }
+    .playing-card.back { background: repeating-linear-gradient(45deg, var(--blue) 0 6px, var(--panel-color) 6px 12px); }
+    @keyframes cardDealIn {
+        0% { opacity:0; transform: translate(-70px,-40px) rotate(-18deg) scale(.7); }
+        70% { opacity:1; }
+        100% { opacity:1; transform: translate(0,0) rotate(0) scale(1); }
+    }
+    .playing-card.deal-in { animation: cardDealIn .35s cubic-bezier(.2,.8,.3,1) both; }
+    .bj-result { text-align:center; font-size:0.85rem; min-height:32px; letter-spacing:0.5px; }
+    .bj-actions { display:flex; gap:10px; width:100%; }
+
+    /* ===== 슬롯머신 ===== */
+    .slot-machine {
+        background: var(--ink);
+        border: 6px solid var(--gold);
+        outline: 4px solid #000;
+        padding:20px; position:relative;
+    }
+    .slot-grid { display:grid; grid-template-columns:repeat(5, 1fr); grid-template-rows:repeat(3, 1fr); gap:6px; width:100%; max-width:380px; margin-bottom:18px; }
+    .slot-cell { background-color: var(--panel-color); border:3px solid #000; display:flex; justify-content:center; align-items:center; font-size:1.7rem; aspect-ratio:1; }
+    .slot-cell.payline { border-color: var(--gold); background-color: rgba(249,226,175,0.18); box-shadow: inset 0 0 0 2px var(--gold); }
+    .slot-cell.spinning { animation: slotFlicker .09s linear infinite; }
+    @keyframes slotFlicker { 0%,100% { opacity:1; transform:translateY(0); } 50% { opacity:.5; transform:translateY(-4px); } }
+    .slot-cell.stopped { animation: slotStop .22s ease-out; }
+    @keyframes slotStop { 0% { transform:scale(1.25); } 100% { transform:scale(1); } }
+    .slot-result { text-align:center; font-size:0.8rem; min-height:32px; margin-top:8px; letter-spacing:0.5px; }
+    .paytable { font-size:0.9rem; color: var(--text-muted); margin-top:14px; text-align:center; line-height:1.7; }
+
+    #slotSpinBtn { background: var(--pink); color:#000; }
+
+    /* ===== 경마 ===== */
+    .horse-select { display:flex; gap:6px; width:100%; max-width:420px; margin-bottom:16px; flex-wrap:wrap; }
+    .horse-pick { flex:1; min-width:60px; text-align:center; padding:10px 4px; background:var(--panel-light); border:3px solid #000; cursor:pointer; font-size:0.6rem; line-height:1.6; box-shadow:3px 3px 0 0 #000; }
+    .horse-pick.active { background:var(--gold); color:var(--ink); }
+    .horse-track { display:flex; flex-direction:column; gap:10px; width:100%; max-width:420px; }
+    .horse-lane { position:relative; height:38px; background: var(--panel-light); border:3px solid #000; overflow:hidden; }
+    .horse-lane .flag { position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:1.1rem; z-index:1; }
+    .horse-emoji { position:absolute; left:0; top:50%; transform:translateY(-50%); font-size:1.5rem; }
+    .horse-emoji.running { animation: horseBob .22s ease-in-out infinite alternate; }
+    @keyframes horseBob { 0%{ transform:translateY(-50%) scaleX(1); } 100%{ transform:translateY(-58%) scaleX(1.06); } }
+
+    /* ===== 룰렛 ===== */
+    .roulette-viewport { position:relative; width:100%; max-width:300px; height:56px; overflow:hidden; border:4px solid #000; background:var(--ink); margin-bottom:16px; }
+    .roulette-strip { position:absolute; top:0; left:0; display:flex; height:100%; }
+    .roulette-cell { width:46px; height:100%; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-family:'Press Start 2P', monospace; font-size:0.7rem; color:#fff; border-right:2px solid #000; }
+    .roulette-cell.red { background:#c0392b; }
+    .roulette-cell.black { background:#1b1b1f; }
+    .roulette-cell.green { background:#1e824c; }
+    .roulette-pointer { position:absolute; left:50%; top:0; transform:translateX(-50%); font-size:0.9rem; color: var(--gold); z-index:2; line-height:1; }
+    .roulette-pointer.bottom { top:auto; bottom:0; }
+</style>
+</head>
+<body>
+
+<div id="authModal" class="modal-overlay">
+    <div class="modal-content">
+        <h2>KEE-PIT</h2>
+        <p class="modal-sub">가상 게임머니(kee)로 즐기는 미니게임 모음<br>(실제 돈과 무관합니다)</p>
+        <div class="tabs">
+            <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">로그인</button>
+            <button class="tab-btn" id="tabSignup" onclick="switchTab('signup')">회원가입</button>
+        </div>
+        <input class="pixel-input" type="text" id="authUsername" placeholder="아이디 (영문/숫자 3~15자)" autocomplete="username">
+        <input class="pixel-input" type="password" id="authPassword" placeholder="비밀번호 (6자 이상)" autocomplete="current-password" onkeypress="if(event.key==='Enter') handleAuthSubmit()">
+        <div class="error-msg" id="authError"></div>
+        <button class="btn-main pixel-btn" style="width:100%; padding:16px;" id="authSubmitBtn" onclick="handleAuthSubmit()">로그인</button>
+    </div>
+</div>
+
+<div class="container" id="gameContainer" style="display:none;">
+    <div class="header">
+        <div class="balance-box">
+            <span class="brand">🕹️ KEE-PIT</span>
+            <span class="balance-title">보유 코인</span>
+            <span class="balance-amount">🪙 <span id="balanceDisplay">0</span> kee</span>
+        </div>
+        <div class="user-panel">
+            <span class="user-name" id="currentUserDisplay">P1</span>
+            <button class="btn-logout pixel-btn" onclick="giveRelief()">파산지원 (10,000 kee)</button>
+            <button class="btn-logout pixel-btn" onclick="logout()">로그아웃</button>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <div class="leaderboard">
+            <h3>🏆 HIGH SCORE</h3>
+            <ul class="rank-list" id="rankList">
+                <li style="text-align:center; color:var(--text-muted); margin-top:20px;">로딩 중...</li>
+            </ul>
+        </div>
+
+        <div class="game-area">
+
+            <!-- 로비 -->
+            <div id="lobbyView">
+                <div class="lobby-grid">
+                    <div class="lobby-card" onclick="showView('mines')">
+                        <div class="icon">💣</div>
+                        <div class="name">MINES</div>
+                    </div>
+                    <div class="lobby-card" onclick="showView('blackjack')">
+                        <div class="icon">🃏</div>
+                        <div class="name">BLACKJACK</div>
+                    </div>
+                    <div class="lobby-card" onclick="showView('slots')">
+                        <div class="icon">🎰</div>
+                        <div class="name">SLOTS</div>
+                    </div>
+                    <div class="lobby-card" onclick="showView('horse')">
+                        <div class="icon">🐎</div>
+                        <div class="name">HORSE RACE</div>
+                    </div>
+                    <div class="lobby-card" onclick="showView('roulette')">
+                        <div class="icon">🔴</div>
+                        <div class="name">ROULETTE</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 마인즈 -->
+            <div id="minesView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
+                <button class="back-btn pixel-btn" onclick="exitToLobby('mines')">← 로비로</button>
+                <div class="controls">
+                    <div class="input-group">
+                        <label>BET</label>
+                        <input class="pixel-input" type="number" id="betInput" min="100" value="1000" step="100">
+                    </div>
+                    <div class="input-group">
+                        <label>MINES</label>
+                        <select class="pixel-input" id="minesSelect">
+                            <option value="1">1개</option>
+                            <option value="3" selected>3개</option>
+                            <option value="5">5개</option>
+                            <option value="10">10개</option>
+                            <option value="20">20개 (극악)</option>
+                        </select>
+                    </div>
+                    <button class="btn-main pixel-btn" id="actionBtn" onclick="handleActionButton()">GAME START</button>
+                </div>
+                <div class="board-container">
+                    <div class="status-box" id="statusBox">
+                        <span class="next-multiplier">준비 완료</span>
+                    </div>
+                    <div class="grid" id="grid"></div>
+                </div>
+            </div>
+
+            <!-- 블랙잭 -->
+            <div id="blackjackView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
+                <button class="back-btn pixel-btn" onclick="exitToLobby('blackjack')">← 로비로</button>
+                <div class="controls">
+                    <div class="input-group">
+                        <label>BET</label>
+                        <input class="pixel-input" type="number" id="bjBetInput" min="100" value="1000" step="100">
+                    </div>
+                    <button class="btn-main pixel-btn" id="bjDealBtn" onclick="bjDeal()">DEAL</button>
+                </div>
+                <div class="board-container">
+                    <div class="bj-table">
+                        <div>
+                            <div class="bj-hand-label">DEALER <span class="bj-hand-value" id="bjDealerValue"></span></div>
+                            <div class="bj-cards" id="bjDealerCards"></div>
+                        </div>
+                        <div>
+                            <div class="bj-hand-label">PLAYER <span class="bj-hand-value" id="bjPlayerValue"></span></div>
+                            <div class="bj-cards" id="bjPlayerCards"></div>
+                        </div>
+                        <div class="bj-result" id="bjResult"></div>
+                        <div class="bj-actions">
+                            <button class="btn-main pixel-btn" id="bjHitBtn" onclick="bjHit()" disabled>HIT</button>
+                            <button class="btn-secondary pixel-btn" id="bjStandBtn" onclick="bjStand()" disabled>STAND</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 슬롯 -->
+            <div id="slotsView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
+                <button class="back-btn pixel-btn" onclick="exitToLobby('slots')">← 로비로</button>
+                <div class="controls">
+                    <div class="input-group">
+                        <label>BET</label>
+                        <input class="pixel-input" type="number" id="slotBetInput" min="100" value="1000" step="100">
+                    </div>
+                    <button class="btn-main pixel-btn" id="slotSpinBtn" onclick="slotSpin()">🎰 SPIN</button>
+                </div>
+                <div class="board-container">
+                    <div class="slot-machine">
+                        <div class="slot-grid" id="slotGrid"></div>
+                        <div class="slot-result" id="slotResult"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 경마 -->
+            <div id="horseView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
+                <button class="back-btn pixel-btn" onclick="exitToLobby('horse')">← LOBBY</button>
+                <div class="controls">
+                    <div class="input-group">
+                        <label>BET</label>
+                        <input class="pixel-input" type="number" id="horseBetInput" min="100" value="1000" step="100">
+                    </div>
+                    <button class="btn-main pixel-btn" id="horseRaceBtn" onclick="horseRace()">🏁 RACE</button>
+                </div>
+                <div class="board-container">
+                    <div class="horse-select" id="horseSelect"></div>
+                    <div class="horse-track" id="horseTrack"></div>
+                    <div class="slot-result" id="horseResult"></div>
+                </div>
+            </div>
+
+            <!-- 룰렛 -->
+            <div id="rouletteView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
+                <button class="back-btn pixel-btn" onclick="exitToLobby('roulette')">← LOBBY</button>
+                <div class="controls">
+                    <div class="input-group">
+                        <label>BET</label>
+                        <input class="pixel-input" type="number" id="rouletteBetInput" min="100" value="1000" step="100">
+                    </div>
+                    <div class="input-group">
+                        <label>PICK</label>
+                        <select class="pixel-input" id="rouletteBetType" onchange="onRouletteBetTypeChange()">
+                            <option value="red">RED (x2)</option>
+                            <option value="black">BLACK (x2)</option>
+                            <option value="odd">ODD (x2)</option>
+                            <option value="even">EVEN (x2)</option>
+                            <option value="number">NUMBER (x36)</option>
+                        </select>
+                    </div>
+                    <div class="input-group hidden" id="rouletteNumberGroup">
+                        <label>0-36</label>
+                        <input class="pixel-input" type="number" id="rouletteNumberInput" min="0" max="36" value="0">
+                    </div>
+                    <button class="btn-main pixel-btn" id="rouletteSpinBtn" onclick="rouletteSpin()">🎡 SPIN</button>
+                </div>
+                <div class="board-container">
+                    <div class="roulette-viewport" id="rouletteViewport">
+                        <div class="roulette-pointer">▼</div>
+                        <div class="roulette-strip" id="rouletteStrip"></div>
+                        <div class="roulette-pointer bottom">▲</div>
+                    </div>
+                    <div class="slot-result" id="rouletteResult"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBgyQkeKHWpiTGhH24neivlM3dN674D1kM",
+      authDomain: "kee-pit.firebaseapp.com",
+      databaseURL: "https://kee-pit-default-rtdb.firebaseio.com",
+      projectId: "kee-pit",
+      storageBucket: "kee-pit.firebasestorage.app",
+      messagingSenderId: "911390417144",
+      appId: "1:911390417144:web:7a01697f7528e9c0069b0d",
+      measurementId: "G-CVYHFVC5RT"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    const FAKE_EMAIL_DOMAIN = "@mines.local";
+    const INITIAL_BALANCE = 10000;
+    const GRID_SIZE = 25;
+
+    let currentUser = null;
+    let currentUid = null;
+    let balance = 0;
+    let authMode = 'login';
+    let currentView = 'lobby';
+
+    let state = { // 마인즈 상태
+        isPlaying: false, betAmount: 0, mineCount: 3,
+        mines: [], revealed: [], currentMultiplier: 1.0, gameOver: false
+    };
+
+    let bjState = { // 블랙잭 상태
+        deck: [], playerHand: [], dealerHand: [], bet: 0, isPlaying: false, revealDealer: false
+    };
+
+    const UI = {
+        balanceDisplay: document.getElementById('balanceDisplay'),
+        betInput: document.getElementById('betInput'),
+        minesSelect: document.getElementById('minesSelect'),
+        actionBtn: document.getElementById('actionBtn'),
+        statusBox: document.getElementById('statusBox'),
+        gridEl: document.getElementById('grid'),
+        rankList: document.getElementById('rankList'),
+        authError: document.getElementById('authError'),
+        authSubmitBtn: document.getElementById('authSubmitBtn'),
+        tabLogin: document.getElementById('tabLogin'),
+        tabSignup: document.getElementById('tabSignup')
+    };
+
+    // ==========================================
+    // 0. 아이디 검증 유틸
+    // ==========================================
+    function isValidUsername(name) { return /^[a-zA-Z0-9_]{3,15}$/.test(name); }
+    function usernameToEmail(name) { return name.toLowerCase() + FAKE_EMAIL_DOMAIN; }
+
+    // ==========================================
+    // 1. 인증(로그인/회원가입) 로직
+    // ==========================================
+    window.switchTab = function(mode) {
+        authMode = mode;
+        UI.authError.innerText = '';
+        if (mode === 'login') {
+            UI.tabLogin.classList.add('active'); UI.tabSignup.classList.remove('active');
+            UI.authSubmitBtn.innerText = '로그인';
+        } else {
+            UI.tabSignup.classList.add('active'); UI.tabLogin.classList.remove('active');
+            UI.authSubmitBtn.innerText = '회원가입';
+        }
+    };
+
+    window.handleAuthSubmit = async function() {
+        const username = document.getElementById('authUsername').value.trim();
+        const password = document.getElementById('authPassword').value;
+        UI.authError.innerText = '';
+
+        if (!isValidUsername(username)) { UI.authError.innerText = '아이디는 영문/숫자/밑줄 3~15자여야 합니다.'; return; }
+        if (!password || password.length < 6) { UI.authError.innerText = '비밀번호는 6자 이상이어야 합니다.'; return; }
+
+        UI.authSubmitBtn.disabled = true;
+        const email = usernameToEmail(username);
+
+        try {
+            if (authMode === 'signup') {
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                await db.ref('users/' + cred.user.uid).set({ username, balance: INITIAL_BALANCE });
+            } else {
+                await auth.signInWithEmailAndPassword(email, password);
+            }
+        } catch (error) {
+            UI.authError.innerText = mapAuthError(error.code);
+        } finally {
+            UI.authSubmitBtn.disabled = false;
+        }
+    };
+
+    function mapAuthError(code) {
+        switch (code) {
+            case 'auth/email-already-in-use': return '이미 존재하는 아이디입니다.';
+            case 'auth/invalid-credential':
+            case 'auth/wrong-password': return '아이디 또는 비밀번호가 틀렸습니다.';
+            case 'auth/user-not-found': return '존재하지 않는 아이디입니다.';
+            case 'auth/weak-password': return '비밀번호가 너무 약합니다 (6자 이상).';
+            case 'auth/too-many-requests': return '시도가 너무 많습니다. 잠시 후 다시 시도하세요.';
+            case 'auth/configuration-not-found': return 'Firebase 콘솔에서 이메일/비밀번호 로그인을 활성화해주세요.';
+            default: return '오류가 발생했습니다: ' + code;
+        }
+    }
+
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUid = user.uid;
+            try {
+                const snapshot = await db.ref('users/' + currentUid).get();
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    currentUser = data.username; balance = data.balance;
+                } else {
+                    currentUser = user.email.replace(FAKE_EMAIL_DOMAIN, '');
+                    balance = INITIAL_BALANCE;
+                    await db.ref('users/' + currentUid).set({ username: currentUser, balance });
+                }
+                document.getElementById('authModal').classList.add('hidden');
+                document.getElementById('gameContainer').style.display = 'flex';
+                document.getElementById('currentUserDisplay').innerText = currentUser;
+                updateBalanceUI();
+                showView('lobby');
+                startLeaderboardSync();
+            } catch (error) {
+                console.error("Firebase DB Error:", error);
+                alert("데이터베이스 연결에 실패했습니다. Realtime Database 규칙을 확인하세요.");
+            }
+        } else {
+            currentUid = null; currentUser = null;
+            document.getElementById('authModal').classList.remove('hidden');
+            document.getElementById('gameContainer').style.display = 'none';
+        }
+    });
+
+    window.logout = function() {
+        if (state.isPlaying || bjState.isPlaying || raceInProgress || rouletteSpinning) return alert('진행중인 게임이 있습니다. 게임을 끝낸 후 로그아웃하세요.');
+        auth.signOut();
+        document.getElementById('authUsername').value = '';
+        document.getElementById('authPassword').value = '';
+    };
+
+    window.giveRelief = async function() {
+        if (state.isPlaying || bjState.isPlaying || raceInProgress || rouletteSpinning) return alert('게임 진행 중에는 받을 수 없습니다.');
+        if (balance >= 1000) return alert('잔액이 1,000 kee 미만일 때만 지원받을 수 있습니다.');
+        balance = INITIAL_BALANCE;
+        await syncBalanceToDB();
+        updateBalanceUI();
+    };
+
+    async function syncBalanceToDB() {
+        if (!currentUid) return;
+        await db.ref('users/' + currentUid).update({ balance });
+    }
+
+    function updateBalanceUI() {
+        UI.balanceDisplay.innerText = `${balance.toLocaleString()}`;
+    }
+
+    function startLeaderboardSync() {
+        db.ref('users').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            const userArray = Object.keys(data).map(uid => ({
+                uid, name: data[uid].username, balance: data[uid].balance
+            })).sort((a, b) => b.balance - a.balance);
+
+            UI.rankList.innerHTML = '';
+            userArray.forEach((user, index) => {
+                const li = document.createElement('li');
+                li.className = `rank-item ${user.uid === currentUid ? 'me' : ''}`;
+                let rankIcon = `${index + 1}위`;
+                if (index === 0) rankIcon = '🥇'; if (index === 1) rankIcon = '🥈'; if (index === 2) rankIcon = '🥉';
+                li.innerHTML = `<span class="rank-name">${rankIcon} ${user.name}</span><span class="rank-money">${user.balance.toLocaleString()} kee</span>`;
+                UI.rankList.appendChild(li);
+            });
+        });
+    }
+
+    // ==========================================
+    // 화면 전환 (로비 <-> 게임)
+    // ==========================================
+    window.showView = function(view) {
+        currentView = view;
+        document.getElementById('lobbyView').classList.toggle('hidden', view !== 'lobby');
+        document.getElementById('minesView').classList.toggle('hidden', view !== 'mines');
+        document.getElementById('blackjackView').classList.toggle('hidden', view !== 'blackjack');
+        document.getElementById('slotsView').classList.toggle('hidden', view !== 'slots');
+        document.getElementById('horseView').classList.toggle('hidden', view !== 'horse');
+        document.getElementById('rouletteView').classList.toggle('hidden', view !== 'roulette');
+        if (view === 'slots') initSlotGrid();
+        if (view === 'horse') initHorseView();
+        if (view === 'roulette') initRouletteView();
+    };
+
+    window.exitToLobby = function(from) {
+        if (from === 'mines' && state.isPlaying) return alert('진행중인 게임이 있습니다. 인출하거나 게임을 끝낸 후 나가세요.');
+        if (from === 'blackjack' && bjState.isPlaying) return alert('진행중인 라운드가 있습니다. 끝낸 후 나가세요.');
+        if (from === 'horse' && raceInProgress) return alert('Race in progress. Wait for it to finish.');
+        if (from === 'roulette' && rouletteSpinning) return alert('Spin in progress. Wait for it to finish.');
+        showView('lobby');
+    };
+
+    // ==========================================
+    // 마인즈 게임
+    // ==========================================
+    function combination(n, k) {
+        if (k < 0 || k > n) return 0;
+        if (k === 0 || k === n) return 1;
+        let res = 1; for (let i = 1; i <= k; i++) res = res * (n - i + 1) / i; return res;
+    }
+    function calculateMultiplier(gemsRevealed, totalMines) {
+        if (gemsRevealed === 0) return 1.0;
+        const prob = combination(GRID_SIZE - totalMines, gemsRevealed) / combination(GRID_SIZE, gemsRevealed);
+        return Math.max(1.01, Math.floor(((1 / prob) * 0.97) * 100) / 100);
+    }
+    window.handleActionButton = function() { state.isPlaying ? cashout() : startGame(); };
+
+    async function startGame() {
+        const bet = parseInt(UI.betInput.value);
+        const mineCount = parseInt(UI.minesSelect.value);
+        if (isNaN(bet) || bet <= 0) return alert('올바른 금액을 입력하세요.');
+        if (bet > balance) return alert('보유 코인이 부족합니다!');
+
+        const mines = [];
+        while (mines.length < mineCount) {
+            const rand = Math.floor(Math.random() * GRID_SIZE);
+            if (!mines.includes(rand)) mines.push(rand);
+        }
+        balance -= bet;
+        await syncBalanceToDB();
+        state = { ...state, betAmount: bet, mineCount, mines, revealed: [], currentMultiplier: 1.0, isPlaying: true, gameOver: false };
+        updateMinesUI(); renderBoard(); updateBalanceUI();
+    }
+
+    window.handleTileClick = async function(index) {
+        if (!state.isPlaying || state.revealed.includes(index)) return;
+        state.revealed.push(index);
+        if (state.mines.includes(index)) {
+            state.isPlaying = false; state.gameOver = true;
+            UI.statusBox.innerHTML = `<span class="message lose">💥 ${state.betAmount.toLocaleString()} kee 잃음!</span>`;
+        } else {
+            state.currentMultiplier = calculateMultiplier(state.revealed.length, state.mineCount);
+            if (state.revealed.length === GRID_SIZE - state.mineCount) { await cashout(); return; }
+        }
+        updateMinesUI(); renderBoard();
+    };
+
+    async function cashout() {
+        if (!state.isPlaying) return;
+        const winAmount = Math.floor(state.betAmount * state.currentMultiplier);
+        balance += winAmount;
+        await syncBalanceToDB();
+        state.isPlaying = false;
+        UI.statusBox.innerHTML = `<span class="message win">🎉 ${winAmount.toLocaleString()} kee 획득!</span>`;
+        updateMinesUI(); renderBoard(); updateBalanceUI();
+    }
+
+    function updateMinesUI() {
+        updateBalanceUI();
+        if (state.isPlaying) {
+            UI.betInput.disabled = true; UI.minesSelect.disabled = true;
+            const currentWin = Math.floor(state.betAmount * state.currentMultiplier);
+            UI.actionBtn.innerText = `CASHOUT (${currentWin.toLocaleString()})`;
+            const nextMult = calculateMultiplier(state.revealed.length + 1, state.mineCount);
+            UI.statusBox.innerHTML = `<div class="multiplier">${state.currentMultiplier.toFixed(2)}x</div><div class="next-multiplier">다음 보석: ${nextMult.toFixed(2)}x</div>`;
+        } else {
+            UI.betInput.disabled = false; UI.minesSelect.disabled = false;
+            UI.actionBtn.innerText = 'GAME START';
+            if (!state.gameOver && state.revealed.length === 0) UI.statusBox.innerHTML = `<span class="next-multiplier">준비 완료</span>`;
+        }
+    }
+
+    function renderBoard() {
+        UI.gridEl.innerHTML = '';
+        for (let i = 0; i < GRID_SIZE; i++) {
+            const tile = document.createElement('div');
+            tile.classList.add('tile');
+            const isRevealed = state.revealed.includes(i);
+            const isMine = state.mines.includes(i);
+            if (!state.isPlaying && !state.gameOver) { /* 빈칸 */ }
+            else if (isRevealed) {
+                tile.classList.add('revealed');
+                if (isMine) { tile.classList.add('mine'); tile.innerText = '💣'; }
+                else { tile.classList.add('gem'); tile.innerText = '💎'; }
+            } else if (state.gameOver) {
+                tile.classList.add('revealed');
+                if (isMine) { tile.classList.add('mine'); tile.innerText = '💣'; }
+                else { tile.style.opacity = '0.3'; }
+            }
+            tile.addEventListener('click', () => window.handleTileClick(i));
+            UI.gridEl.appendChild(tile);
+        }
+    }
+    renderBoard();
+
+    // ==========================================
+    // 블랙잭 게임
+    // ==========================================
+    const SUITS = ['♠', '♥', '♦', '♣'];
+    const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+
+    function createShuffledDeck() {
+        const deck = [];
+        for (const s of SUITS) for (const r of RANKS) deck.push({ suit: s, rank: r });
+        for (let i = deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+        return deck;
+    }
+
+    function cardValue(card) {
+        if (card.rank === 'A') return 11;
+        if (['J','Q','K'].includes(card.rank)) return 10;
+        return parseInt(card.rank);
+    }
+
+    function handValue(hand) {
+        let total = hand.reduce((sum, c) => sum + cardValue(c), 0);
+        let aces = hand.filter(c => c.rank === 'A').length;
+        while (total > 21 && aces > 0) { total -= 10; aces--; }
+        return total;
+    }
+
+    function renderCard(card, hidden = false) {
+        if (hidden) return `<div class="playing-card back"></div>`;
+        const isRed = card.suit === '♥' || card.suit === '♦';
+        return `<div class="playing-card ${isRed ? 'red' : 'black'}">${card.rank}<span>${card.suit}</span></div>`;
+    }
+
+    function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+    function updateBjValues() {
+        document.getElementById('bjPlayerValue').innerText = bjState.playerHand.length ? `(${handValue(bjState.playerHand)})` : '';
+        document.getElementById('bjDealerValue').innerText = bjState.dealerHand.length ? `(${bjState.revealDealer ? handValue(bjState.dealerHand) : '?'})` : '';
+    }
+
+    async function dealCardAnimated(containerId, card, hidden = false) {
+        const container = document.getElementById(containerId);
+        const el = document.createElement('div');
+        if (hidden) {
+            el.className = 'playing-card back deal-in';
+        } else {
+            const isRed = card.suit === '♥' || card.suit === '♦';
+            el.className = `playing-card ${isRed ? 'red' : 'black'} deal-in`;
+            el.innerHTML = `${card.rank}<span>${card.suit}</span>`;
+        }
+        container.appendChild(el);
+        await sleep(300);
+    }
+
+    window.bjDeal = async function() {
+        const bet = parseInt(document.getElementById('bjBetInput').value);
+        if (isNaN(bet) || bet <= 0) return alert('올바른 금액을 입력하세요.');
+        if (bet > balance) return alert('보유 코인이 부족합니다!');
+
+        balance -= bet;
+        await syncBalanceToDB(); updateBalanceUI();
+
+        bjState.deck = createShuffledDeck();
+        bjState.playerHand = [];
+        bjState.dealerHand = [];
+        bjState.bet = bet;
+        bjState.isPlaying = true;
+        bjState.revealDealer = false;
+
+        document.getElementById('bjDealBtn').disabled = true;
+        document.getElementById('bjBetInput').disabled = true;
+        document.getElementById('bjHitBtn').disabled = true;
+        document.getElementById('bjStandBtn').disabled = true;
+        document.getElementById('bjResult').innerText = '';
+        document.getElementById('bjPlayerCards').innerHTML = '';
+        document.getElementById('bjDealerCards').innerHTML = '';
+        updateBjValues();
+
+        const dealPlan = [
+            { hand: bjState.playerHand, container: 'bjPlayerCards', hidden: false },
+            { hand: bjState.dealerHand, container: 'bjDealerCards', hidden: false },
+            { hand: bjState.playerHand, container: 'bjPlayerCards', hidden: false },
+            { hand: bjState.dealerHand, container: 'bjDealerCards', hidden: true }
+        ];
+        for (const step of dealPlan) {
+            const card = bjState.deck.pop();
+            step.hand.push(card);
+            await dealCardAnimated(step.container, card, step.hidden);
+            updateBjValues();
+        }
+
+        document.getElementById('bjHitBtn').disabled = false;
+        document.getElementById('bjStandBtn').disabled = false;
+
+        if (handValue(bjState.playerHand) === 21) { await bjStand(); }
+    };
+
+    window.bjHit = async function() {
+        if (!bjState.isPlaying) return;
+        const card = bjState.deck.pop();
+        bjState.playerHand.push(card);
+        await dealCardAnimated('bjPlayerCards', card, false);
+        updateBjValues();
+        const val = handValue(bjState.playerHand);
+        if (val > 21) { bjEndRound('bust'); }
+        else if (val === 21) { bjStand(); }
+    };
+
+    window.bjStand = async function() {
+        if (!bjState.isPlaying) return;
+        bjState.revealDealer = true;
+        renderBjTable();
+        while (handValue(bjState.dealerHand) < 17) {
+            await sleep(450);
+            const card = bjState.deck.pop();
+            bjState.dealerHand.push(card);
+            await dealCardAnimated('bjDealerCards', card, false);
+            updateBjValues();
+        }
+
+        const playerVal = handValue(bjState.playerHand);
+        const dealerVal = handValue(bjState.dealerHand);
+        const playerBJ = playerVal === 21 && bjState.playerHand.length === 2;
+        const dealerBJ = dealerVal === 21 && bjState.dealerHand.length === 2;
+
+        if (dealerVal > 21) return bjEndRound('win');
+        if (playerBJ && !dealerBJ) return bjEndRound('blackjack');
+        if (dealerBJ && !playerBJ) return bjEndRound('lose');
+        if (playerVal > dealerVal) return bjEndRound('win');
+        if (playerVal < dealerVal) return bjEndRound('lose');
+        return bjEndRound('push');
+    };
+
+    async function bjEndRound(result) {
+        bjState.isPlaying = false;
+        let winAmount = 0;
+        let msg = '';
+        if (result === 'blackjack') { winAmount = Math.floor(bjState.bet * 2.5); msg = `🎉 블랙잭! ${winAmount.toLocaleString()} kee 획득!`; }
+        else if (result === 'win') { winAmount = bjState.bet * 2; msg = `🎉 승리! ${winAmount.toLocaleString()} kee 획득!`; }
+        else if (result === 'push') { winAmount = bjState.bet; msg = `🤝 무승부 (베팅금 반환)`; }
+        else if (result === 'bust') { winAmount = 0; msg = `💥 버스트! ${bjState.bet.toLocaleString()} kee 잃음`; }
+        else { winAmount = 0; msg = `😢 패배! ${bjState.bet.toLocaleString()} kee 잃음`; }
+
+        balance += winAmount;
+        await syncBalanceToDB(); updateBalanceUI();
+
+        document.getElementById('bjResult').innerText = msg;
+        document.getElementById('bjResult').style.color = winAmount > bjState.bet ? 'var(--gold)' : (winAmount === bjState.bet ? 'var(--text-muted)' : 'var(--pink)');
+        document.getElementById('bjHitBtn').disabled = true;
+        document.getElementById('bjStandBtn').disabled = true;
+        document.getElementById('bjDealBtn').disabled = false;
+        document.getElementById('bjBetInput').disabled = false;
+        renderBjTable();
+    }
+
+    function renderBjTable() {
+        const dealerVal = bjState.revealDealer ? handValue(bjState.dealerHand) : '?';
+        document.getElementById('bjDealerValue').innerText = bjState.dealerHand.length ? `(${dealerVal})` : '';
+        document.getElementById('bjPlayerValue').innerText = bjState.playerHand.length ? `(${handValue(bjState.playerHand)})` : '';
+
+        document.getElementById('bjDealerCards').innerHTML = bjState.dealerHand.map((c, i) =>
+            renderCard(c, i === 1 && !bjState.revealDealer)
+        ).join('');
+        document.getElementById('bjPlayerCards').innerHTML = bjState.playerHand.map(c => renderCard(c)).join('');
+    }
+
+    // ==========================================
+    // 슬롯머신 게임 (3행 5열, 8개 페이라인: 가로3 + 세로5)
+    // ==========================================
+    const SLOT_SYMBOLS = [
+        { symbol: '🍒', weight: 30, pay: { 3: 2, 4: 4, 5: 8 } },
+        { symbol: '🍋', weight: 24, pay: { 3: 3, 4: 6, 5: 12 } },
+        { symbol: '🔔', weight: 18, pay: { 3: 5, 4: 10, 5: 20 } },
+        { symbol: '⭐', weight: 12, pay: { 3: 8, 4: 16, 5: 32 } },
+        { symbol: '💎', weight: 8,  pay: { 3: 15, 4: 30, 5: 60 } },
+        { symbol: '7️⃣', weight: 4,  pay: { 3: 25, 4: 50, 5: 100 } }
+    ];
+    const TOTAL_WEIGHT = SLOT_SYMBOLS.reduce((s, x) => s + x.weight, 0);
+
+    // 각 페이라인은 (row, col) 좌표 배열로 정의 (길이가 달라도 되도록 일반화)
+    const PAYLINES = [
+        { name: '상단',   cells: [[0,0],[0,1],[0,2],[0,3],[0,4]] },
+        { name: '중단',   cells: [[1,0],[1,1],[1,2],[1,3],[1,4]] },
+        { name: '하단',   cells: [[2,0],[2,1],[2,2],[2,3],[2,4]] },
+        { name: '세로1',  cells: [[0,0],[1,0],[2,0]] },
+        { name: '세로2',  cells: [[0,1],[1,1],[2,1]] },
+        { name: '세로3',  cells: [[0,2],[1,2],[2,2]] },
+        { name: '세로4',  cells: [[0,3],[1,3],[2,3]] },
+        { name: '세로5',  cells: [[0,4],[1,4],[2,4]] }
+    ];
+
+    function pickRandomSymbol() {
+        let r = Math.random() * TOTAL_WEIGHT;
+        for (const s of SLOT_SYMBOLS) {
+            if (r < s.weight) return s.symbol;
+            r -= s.weight;
+        }
+        return SLOT_SYMBOLS[0].symbol;
+    }
+
+    let slotGridData = [];
+
+    function initSlotGrid() {
+        if (slotGridData.length) { renderSlotGrid(); return; }
+        slotGridData = [];
+        for (let row = 0; row < 3; row++) {
+            const r = [];
+            for (let col = 0; col < 5; col++) r.push(pickRandomSymbol());
+            slotGridData.push(r);
+        }
+        renderSlotGrid();
+    }
+
+    function renderSlotGrid(winCells = []) {
+        const gridEl = document.getElementById('slotGrid');
+        gridEl.innerHTML = '';
+        const winSet = new Set(winCells.map(c => `${c.row}-${c.col}`));
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 5; col++) {
+                const cell = document.createElement('div');
+                cell.classList.add('slot-cell');
+                if (winSet.has(`${row}-${col}`)) cell.classList.add('payline');
+                cell.innerText = slotGridData[row][col];
+                gridEl.appendChild(cell);
+            }
+        }
+    }
+
+    // 한 페이라인(길이 5의 심볼 배열)에서 왼쪽 정렬 여부와 상관없이
+    // 가장 긴 "연속 동일 심볼" 구간을 찾는다 (3개 이상이어야 인정)
+    function findBestRun(line) {
+        let bestLen = 0, bestSymbol = null, bestStart = 0;
+        let i = 0;
+        while (i < line.length) {
+            let j = i;
+            while (j < line.length && line[j] === line[i]) j++;
+            const runLen = j - i;
+            if (runLen > bestLen) { bestLen = runLen; bestSymbol = line[i]; bestStart = i; }
+            i = j;
+        }
+        return { len: bestLen, symbol: bestSymbol, start: bestStart };
+    }
+
+    // 8개 페이라인을 전부 검사해서, 3연속 이상 맞은 라인들을 모두 찾는다
+    function evaluateAllPaylines(grid) {
+        const wins = [];
+        for (const line of PAYLINES) {
+            const symbols = line.cells.map(([r, c]) => grid[r][c]);
+            const run = findBestRun(symbols);
+            if (run.len < 3) continue;
+            const symbolData = SLOT_SYMBOLS.find(s => s.symbol === run.symbol);
+            const multiplier = symbolData.pay[run.len] || 0;
+            if (multiplier <= 0) continue;
+            const cells = line.cells.slice(run.start, run.start + run.len).map(([r, c]) => ({ row: r, col: c }));
+            wins.push({ lineName: line.name, symbol: run.symbol, count: run.len, multiplier, cells });
+        }
+        return wins;
+    }
+
+    window.slotSpin = async function() {
+        const bet = parseInt(document.getElementById('slotBetInput').value);
+        if (isNaN(bet) || bet <= 0) return alert('올바른 금액을 입력하세요.');
+        if (bet > balance) return alert('보유 코인이 부족합니다!');
+
+        document.getElementById('slotSpinBtn').disabled = true;
+        document.getElementById('slotResult').innerText = '스핀 중...';
+        document.getElementById('slotResult').style.color = '';
+
+        balance -= bet;
+        await syncBalanceToDB(); updateBalanceUI();
+
+        // 최종 결과를 미리 결정 (연출용, 계산은 다 멈춘 뒤에만 수행)
+        const finalGrid = [];
+
+        for (let row = 0; row < 3; row++) {
+            const r = [];
+            for (let col = 0; col < 5; col++) r.push(pickRandomSymbol());
+            finalGrid.push(r);
+        }
+
+        // 스핀 시작: 임시 랜덤 심볼로 그려서 전부 깜빡이는 상태로 시작
+        slotGridData = [];
+        for (let row = 0; row < 3; row++) {
+            const r = [];
+            for (let col = 0; col < 5; col++) r.push(pickRandomSymbol());
+            slotGridData.push(r);
+        }
+        renderSlotGrid();
+        const gridEl = document.getElementById('slotGrid');
+        Array.from(gridEl.children).forEach(c => c.classList.add('spinning'));
+
+        const colStopped = [false, false, false, false, false];
+        const flickerTimer = setInterval(() => {
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 5; col++) {
+                    if (colStopped[col]) continue;
+                    const cell = gridEl.children[row * 5 + col];
+                    if (cell) cell.innerText = pickRandomSymbol();
+                }
+            }
+        }, 90);
+
+        // 왼쪽 컬럼부터 하나씩 순서대로 정지
+        for (let col = 0; col < 5; col++) {
+            await sleep(col === 0 ? 550 : 350);
+            colStopped[col] = true;
+            for (let row = 0; row < 3; row++) {
+                const cell = gridEl.children[row * 5 + col];
+                cell.classList.remove('spinning');
+                cell.innerText = finalGrid[row][col];
+                cell.classList.add('stopped');
+            }
+        }
+        clearInterval(flickerTimer);
+        slotGridData = finalGrid;
+
+        // 다섯 줄(상단/중단/하단/V/Λ)이 모두 멈춘 뒤에만 결과 계산
+        const wins = evaluateAllPaylines(slotGridData);
+
+        if (wins.length > 0) {
+            const totalMultiplier = wins.reduce((acc, w) => acc * w.multiplier, 1);
+            const winAmount = bet * totalMultiplier;
+            const winCells = wins.flatMap(w => w.cells);
+            renderSlotGrid(winCells);
+
+            balance += winAmount;
+            await syncBalanceToDB(); updateBalanceUI();
+
+            const detail = wins.map(w => `${w.lineName}라인 ${w.symbol}×${w.count}(${w.multiplier}배)`).join(' × ');
+            const comboText = wins.length > 1 ? ` [${wins.length}라인 콤보!]` : '';
+            document.getElementById('slotResult').innerText = `🎉 ${detail} = 총 ${totalMultiplier}배! ${winAmount.toLocaleString()} kee 획득!${comboText}`;
+            document.getElementById('slotResult').style.color = 'var(--gold)';
+        } else {
+            renderSlotGrid([]);
+            document.getElementById('slotResult').innerText = `💨 꽝! ${bet.toLocaleString()} kee 잃음`;
+            document.getElementById('slotResult').style.color = 'var(--pink)';
+        }
+        document.getElementById('slotSpinBtn').disabled = false;
+    };
+
+    // ==========================================
+    // 경마 (Horse Race)
+    // ==========================================
+    const HORSES = [
+        { name: 'H1', weight: 30 },
+        { name: 'H2', weight: 24 },
+        { name: 'H3', weight: 18 },
+        { name: 'H4', weight: 12 },
+        { name: 'H5', weight: 8 }
+    ];
+    const HORSE_TOTAL_WEIGHT = HORSES.reduce((s, h) => s + h.weight, 0);
+    HORSES.forEach(h => { h.multiplier = Math.max(1.2, Math.round((HORSE_TOTAL_WEIGHT / h.weight) * 0.85 * 10) / 10); });
+
+    let selectedHorse = 0;
+    let raceInProgress = false;
+
+    function initHorseView() {
+        renderHorsePicks();
+        renderHorseTrack();
+    }
+
+    function renderHorsePicks() {
+        const sel = document.getElementById('horseSelect');
+        sel.innerHTML = HORSES.map((h, i) =>
+            `<div class="horse-pick ${i === selectedHorse ? 'active' : ''}" data-i="${i}">🐎 ${h.name}<br>x${h.multiplier}</div>`
+        ).join('');
+        Array.from(sel.children).forEach(el => {
+            el.onclick = () => {
+                if (raceInProgress) return;
+                selectedHorse = parseInt(el.dataset.i);
+                renderHorsePicks();
+            };
+        });
+    }
+
+    function renderHorseTrack() {
+        const track = document.getElementById('horseTrack');
+        track.innerHTML = HORSES.map((h, i) =>
+            `<div class="horse-lane"><span class="flag">🏁</span><div class="horse-emoji" id="horse-${i}">🐎</div></div>`
+        ).join('');
+    }
+
+    window.horseRace = async function() {
+        if (raceInProgress) return;
+        const bet = parseInt(document.getElementById('horseBetInput').value);
+        if (isNaN(bet) || bet <= 0) return alert('Enter a valid amount.');
+        if (bet > balance) return alert('Not enough coins!');
+
+        raceInProgress = true;
+        document.getElementById('horseRaceBtn').disabled = true;
+        document.getElementById('horseResult').innerText = '';
+        balance -= bet;
+        await syncBalanceToDB(); updateBalanceUI();
+
+        // 가중치 기반으로 승자를 먼저 결정
+        let r = Math.random() * HORSE_TOTAL_WEIGHT;
+        let winnerIdx = 0;
+        for (let i = 0; i < HORSES.length; i++) {
+            if (r < HORSES[i].weight) { winnerIdx = i; break; }
+            r -= HORSES[i].weight;
+        }
+
+        renderHorseTrack();
+        await sleep(50);
+
+        const durations = HORSES.map((_, i) => i === winnerIdx ? 2.2 : 2.5 + Math.random() * 0.9);
+        HORSES.forEach((_, i) => {
+            const el = document.getElementById(`horse-${i}`);
+            el.classList.add('running');
+            el.style.transition = `left ${durations[i].toFixed(2)}s cubic-bezier(.3,.6,.3,1)`;
+        });
+        requestAnimationFrame(() => {
+            HORSES.forEach((_, i) => {
+                document.getElementById(`horse-${i}`).style.left = 'calc(100% - 40px)';
+            });
+        });
+
+        await sleep(Math.max(...durations) * 1000 + 250);
+        HORSES.forEach((_, i) => document.getElementById(`horse-${i}`).classList.remove('running'));
+
+        const resultEl = document.getElementById('horseResult');
+        if (winnerIdx === selectedHorse) {
+            const winAmount = Math.floor(bet * HORSES[winnerIdx].multiplier);
+            balance += winAmount;
+            await syncBalanceToDB(); updateBalanceUI();
+            resultEl.innerText = `🏆 ${HORSES[winnerIdx].name} WINS! +${winAmount.toLocaleString()}`;
+            resultEl.style.color = 'var(--gold)';
+        } else {
+            resultEl.innerText = `🏁 ${HORSES[winnerIdx].name} WINS - LOST ${bet.toLocaleString()}`;
+            resultEl.style.color = 'var(--pink)';
+        }
+
+        raceInProgress = false;
+        document.getElementById('horseRaceBtn').disabled = false;
+    };
+
+    // ==========================================
+    // 룰렛 (Roulette)
+    // ==========================================
+    const WHEEL_ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+    const RED_NUMBERS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+    const ROULETTE_CELL_W = 46;
+    let rouletteSpinning = false;
+
+    function numberColor(n) {
+        if (n === 0) return 'green';
+        return RED_NUMBERS.has(n) ? 'red' : 'black';
+    }
+
+    function buildRouletteStrip() {
+        const REPEATS = 4;
+        let seq = [];
+        for (let i = 0; i < REPEATS; i++) seq = seq.concat(WHEEL_ORDER);
+        return seq;
+    }
+
+    function renderRouletteStrip(seq) {
+        const track = document.getElementById('rouletteStrip');
+        track.innerHTML = seq.map(n => `<div class="roulette-cell ${numberColor(n)}">${n}</div>`).join('');
+    }
+
+    function initRouletteView() {
+        renderRouletteStrip(buildRouletteStrip());
+        document.getElementById('rouletteStrip').style.transition = 'none';
+        document.getElementById('rouletteStrip').style.transform = 'translateX(0px)';
+        onRouletteBetTypeChange();
+    }
+
+    window.onRouletteBetTypeChange = function() {
+        const type = document.getElementById('rouletteBetType').value;
+        document.getElementById('rouletteNumberGroup').classList.toggle('hidden', type !== 'number');
+    };
+
+    window.rouletteSpin = async function() {
+        if (rouletteSpinning) return;
+        const betType = document.getElementById('rouletteBetType').value;
+        const betNumber = parseInt(document.getElementById('rouletteNumberInput').value);
+        const bet = parseInt(document.getElementById('rouletteBetInput').value);
+        if (isNaN(bet) || bet <= 0) return alert('Enter a valid amount.');
+        if (bet > balance) return alert('Not enough coins!');
+        if (betType === 'number' && (isNaN(betNumber) || betNumber < 0 || betNumber > 36)) return alert('Pick a number 0-36.');
+
+        rouletteSpinning = true;
+        document.getElementById('rouletteSpinBtn').disabled = true;
+        document.getElementById('rouletteResult').innerText = '';
+        balance -= bet;
+        await syncBalanceToDB(); updateBalanceUI();
+
+        const winNumber = Math.floor(Math.random() * 37);
+        const winColor = numberColor(winNumber);
+
+        const seq = buildRouletteStrip();
+        const targetRepeat = 2;
+        const posInOrder = WHEEL_ORDER.indexOf(winNumber);
+        const targetIndex = targetRepeat * WHEEL_ORDER.length + posInOrder;
+
+        renderRouletteStrip(seq);
+        const track = document.getElementById('rouletteStrip');
+        const viewport = document.getElementById('rouletteViewport');
+        track.style.transition = 'none';
+        track.style.transform = 'translateX(0px)';
+        void track.offsetWidth; // 강제 리플로우
+
+        const viewportWidth = viewport.clientWidth;
+        const finalOffset = (viewportWidth / 2 - ROULETTE_CELL_W / 2) - targetIndex * ROULETTE_CELL_W;
+        track.style.transition = 'transform 3.2s cubic-bezier(.12,.8,.2,1)';
+        requestAnimationFrame(() => { track.style.transform = `translateX(${finalOffset}px)`; });
+
+        await sleep(3300);
+
+        let won = false, multiplier = 0;
+        if (betType === 'red') { won = winColor === 'red'; multiplier = 2; }
+        else if (betType === 'black') { won = winColor === 'black'; multiplier = 2; }
+        else if (betType === 'odd') { won = winNumber !== 0 && winNumber % 2 === 1; multiplier = 2; }
+        else if (betType === 'even') { won = winNumber !== 0 && winNumber % 2 === 0; multiplier = 2; }
+        else if (betType === 'number') { won = winNumber === betNumber; multiplier = 36; }
+
+        const resultEl = document.getElementById('rouletteResult');
+        if (won) {
+            const winAmount = bet * multiplier;
+            balance += winAmount;
+            await syncBalanceToDB(); updateBalanceUI();
+            resultEl.innerText = `🎉 ${winNumber} ${winColor.toUpperCase()} - WON ${winAmount.toLocaleString()}`;
+            resultEl.style.color = 'var(--gold)';
+        } else {
+            resultEl.innerText = `💨 ${winNumber} ${winColor.toUpperCase()} - LOST ${bet.toLocaleString()}`;
+            resultEl.style.color = 'var(--pink)';
+        }
+
+        rouletteSpinning = false;
+        document.getElementById('rouletteSpinBtn').disabled = false;
+    };
+</script>
+</body>
+</html>
