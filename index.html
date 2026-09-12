@@ -339,6 +339,10 @@
                         <div class="icon">📈</div>
                         <div class="name">MARKET</div>
                     </div>
+                    <div class="lobby-card" onclick="showView('shop')">
+                        <div class="icon">🏪</div>
+                        <div class="name">SHOP</div>
+                    </div>
                 </div>
             </div>
 
@@ -481,6 +485,20 @@
                 </div>
             </div>
 
+            <!-- 샵 -->
+            <div id="shopView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
+                <button class="back-btn pixel-btn" onclick="exitToLobby('shop')">← LOBBY</button>
+                <div class="board-container" style="align-items:stretch;">
+                    <h3 style="color:var(--blue); font-size:0.85rem; margin-bottom:14px;">⛏️ MINE PICKAXE UPGRADE</h3>
+                    <div class="market-list" id="pickaxeList"></div>
+                </div>
+                <div class="board-container" style="align-items:stretch; border-color:var(--pink);">
+                    <h3 style="color:var(--pink); font-size:0.85rem; margin-bottom:14px;">⚠️ DANGER ZONE</h3>
+                    <p style="color:var(--text-muted); margin-bottom:14px;">Deleting your account is permanent. Your balance, portfolio, and progress will be lost forever.</p>
+                    <button class="btn-main pixel-btn" style="background:var(--pink); color:#000;" onclick="deleteAccount()">DELETE ACCOUNT</button>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -604,6 +622,7 @@
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     currentUser = data.username; balance = data.balance;
+                    pickaxeLevel = data.pickaxeLevel || 0;
                     marketPortfolio = data.portfolio || {};
                     Object.keys(marketPortfolio).forEach(sym => {
                         if (typeof marketPortfolio[sym] === 'number') {
@@ -614,6 +633,7 @@
                     currentUser = user.email.replace(FAKE_EMAIL_DOMAIN, '');
                     balance = INITIAL_BALANCE;
                     marketPortfolio = {};
+                    pickaxeLevel = 0;
                     await db.ref('users/' + currentUid).set({ username: currentUser, balance });
                 }
                 document.getElementById('authModal').classList.add('hidden');
@@ -648,6 +668,11 @@
     const MINE_PERIOD = 1300; // ms, 왕복 한 주기
     const MINE_TARGET_MIN = 42; // %
     const MINE_TARGET_MAX = 58; // %
+    const MINE_BASE_REWARD = 100;
+    const PICKAXE_MULTIPLIERS = [1, 100, 10000]; // 0:기본, 1:철, 2:황금
+    const PICKAXE_PRICES = [0, 10000000000, 1000000000000]; // 100억, 1조
+    const PICKAXE_NAMES = ['WOOD PICKAXE', 'IRON PICKAXE', 'GOLD PICKAXE'];
+    let pickaxeLevel = 0;
     let mineActive = false;
     let mineAnimId = null;
     let mineStartTime = null;
@@ -695,10 +720,11 @@
 
         const resultEl = document.getElementById('mineResult');
         if (pos >= MINE_TARGET_MIN && pos <= MINE_TARGET_MAX) {
-            balance += 100;
+            const reward = MINE_BASE_REWARD * PICKAXE_MULTIPLIERS[pickaxeLevel];
+            balance += reward;
             await syncBalanceToDB();
             updateBalanceUI();
-            resultEl.innerText = '⛏️ HIT! +100 kee';
+            resultEl.innerText = `⛏️ HIT! +${reward.toLocaleString()} kee`;
             resultEl.style.color = 'var(--gold)';
         } else {
             resultEl.innerText = '💨 MISS';
@@ -711,6 +737,66 @@
             resultEl.innerText = '';
             startMineAnimation();
         }, 800);
+    };
+
+    // ==========================================
+    // 샵 (곡괭이 업그레이드 + 계정 탈퇴)
+    // ==========================================
+    function renderShop() {
+        const list = document.getElementById('pickaxeList');
+        let html = '';
+        for (let tier = 1; tier <= 2; tier++) {
+            const owned = pickaxeLevel >= tier;
+            const canBuy = pickaxeLevel === tier - 1;
+            let actionHtml;
+            if (owned) {
+                actionHtml = `<span style="color:var(--gold); font-family:'Press Start 2P', monospace; font-size:0.6rem;">OWNED</span>`;
+            } else if (canBuy) {
+                actionHtml = `<button class="btn-main pixel-btn" onclick="buyPickaxe(${tier})">BUY</button>`;
+            } else {
+                actionHtml = `<span style="color:var(--text-muted); font-family:'Press Start 2P', monospace; font-size:0.55rem;">LOCKED</span>`;
+            }
+            html += `
+            <div class="market-row">
+                <div class="market-info">
+                    <div class="market-name">${PICKAXE_NAMES[tier]}</div>
+                    <div class="market-price">${PICKAXE_PRICES[tier].toLocaleString()} kee</div>
+                    <div class="market-holding">Mine reward x${PICKAXE_MULTIPLIERS[tier].toLocaleString()} (${MINE_BASE_REWARD} → ${(MINE_BASE_REWARD * PICKAXE_MULTIPLIERS[tier]).toLocaleString()} kee per hit)</div>
+                </div>
+                <div class="market-actions">${actionHtml}</div>
+            </div>`;
+        }
+        list.innerHTML = html;
+    }
+
+    window.buyPickaxe = async function(tier) {
+        if (pickaxeLevel !== tier - 1) return;
+        const price = PICKAXE_PRICES[tier];
+        if (balance < price) return alert('Not enough coins!');
+        balance -= price;
+        pickaxeLevel = tier;
+        await syncBalanceToDB();
+        await db.ref('users/' + currentUid).update({ pickaxeLevel });
+        updateBalanceUI();
+        renderShop();
+    };
+
+    window.deleteAccount = async function() {
+        if (!confirm('This will permanently delete your account and all progress. This cannot be undone. Continue?')) return;
+        if (!confirm('Final confirmation: are you absolutely sure you want to delete your account?')) return;
+
+        try {
+            const uid = currentUid;
+            await db.ref('users/' + uid).remove();
+            await auth.currentUser.delete();
+        } catch (error) {
+            console.error('Delete account error:', error);
+            if (error.code === 'auth/requires-recent-login') {
+                alert('For security, please log out and log back in, then try deleting your account again.');
+            } else {
+                alert('Failed to delete account: ' + error.code);
+            }
+        }
     };
 
     async function syncBalanceToDB() {
@@ -757,10 +843,12 @@
         document.getElementById('horseView').classList.toggle('hidden', view !== 'horse');
         document.getElementById('rouletteView').classList.toggle('hidden', view !== 'roulette');
         document.getElementById('marketView').classList.toggle('hidden', view !== 'market');
+        document.getElementById('shopView').classList.toggle('hidden', view !== 'shop');
         if (view === 'slots') initSlotGrid();
         if (view === 'horse') initHorseView();
         if (view === 'roulette') initRouletteView();
         if (view === 'market') initMarketView();
+        if (view === 'shop') renderShop();
     };
 
     window.exitToLobby = function(from) {
@@ -1036,12 +1124,12 @@
     // 슬롯머신 게임 (3행 5열, 8개 페이라인: 가로3 + 세로5)
     // ==========================================
     const SLOT_SYMBOLS = [
-        { symbol: '🍒', weight: 30, pay: { 3: 1, 4: 2, 5: 4 } },
-        { symbol: '🍋', weight: 24, pay: { 3: 2, 4: 3, 5: 6 } },
-        { symbol: '🔔', weight: 18, pay: { 3: 3, 4: 5, 5: 10 } },
-        { symbol: '⭐', weight: 12, pay: { 3: 4, 4: 8, 5: 16 } },
-        { symbol: '💎', weight: 8,  pay: { 3: 7, 4: 14, 5: 28 } },
-        { symbol: '7️⃣', weight: 4,  pay: { 3: 12, 4: 25, 5: 50 } }
+        { symbol: '🍒', weight: 30, pay: { 3: 1, 4: 2, 5: 3 } },
+        { symbol: '🍋', weight: 24, pay: { 3: 1, 4: 2, 5: 4 } },
+        { symbol: '🔔', weight: 18, pay: { 3: 2, 4: 4, 5: 8 } },
+        { symbol: '⭐', weight: 12, pay: { 3: 3, 4: 6, 5: 12 } },
+        { symbol: '💎', weight: 8,  pay: { 3: 5, 4: 10, 5: 20 } },
+        { symbol: '7️⃣', weight: 4,  pay: { 3: 8, 4: 16, 5: 32 } }
     ];
     const TOTAL_WEIGHT = SLOT_SYMBOLS.reduce((s, x) => s + x.weight, 0);
 
