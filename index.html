@@ -321,6 +321,52 @@
     body.theme-cyberpunk .pixel-btn:hover:not(:disabled) { background:rgba(6,182,212,0.3) !important; box-shadow:0 0 10px #06B6D4 !important; }
     body.theme-cyberpunk .pixel-btn:active:not(:disabled) { transform:none !important; }
 
+    /* Cyberpunk: 마인즈(CYBER PSYCHO HUNT) - 스캔/글리치 연출 */
+    body.theme-cyberpunk .tile {
+        background-color:#0a0f1a !important; border-color:#1b2030 !important;
+    }
+    body.theme-cyberpunk .tile:hover:not(.revealed) { box-shadow: inset 0 0 0 2px #06B6D4 !important; }
+    body.theme-cyberpunk .tile.gem {
+        background-color: rgba(6,182,212,0.15) !important; box-shadow: inset 0 0 8px #06B6D4, inset 0 0 0 2px #06B6D4 !important;
+    }
+    body.theme-cyberpunk .tile.mine {
+        background-color: rgba(244,63,94,0.25) !important; box-shadow: inset 0 0 10px #F43F5E, inset 0 0 0 2px #F43F5E !important;
+        animation: cyberMineGlitch 0.4s steps(2, end) 2;
+    }
+    @keyframes cyberMineGlitch {
+        0% { transform: translate(0,0); filter: hue-rotate(0deg); }
+        25% { transform: translate(-3px,2px); filter: hue-rotate(60deg); }
+        50% { transform: translate(3px,-2px); filter: hue-rotate(-60deg); }
+        75% { transform: translate(-2px,-1px); filter: hue-rotate(30deg); }
+        100% { transform: translate(0,0); filter: hue-rotate(0deg); }
+    }
+
+    /* Cyberpunk: 블랙잭(DATA HACK) - 반투명 홀로그램 카드 */
+    body.theme-cyberpunk .playing-card {
+        background: rgba(6,182,212,0.08) !important; backdrop-filter: blur(3px);
+        border:2px solid #06B6D4 !important; box-shadow:0 0 8px #06B6D4 !important;
+        color:#06B6D4 !important;
+    }
+    body.theme-cyberpunk .playing-card.red { color:#F43F5E !important; }
+    body.theme-cyberpunk .playing-card.black { color:#06B6D4 !important; }
+    body.theme-cyberpunk .playing-card.back {
+        background: repeating-linear-gradient(45deg, rgba(124,58,237,0.3) 0 4px, rgba(6,182,212,0.15) 4px 8px) !important;
+        border:2px solid #7C3AED !important;
+    }
+
+    /* Cyberpunk: 룰렛(NEON ROULETTE) - 형광 블루/블랙, 레이저 포인터 */
+    body.theme-cyberpunk .roulette-cell.red { background:#F43F5E !important; box-shadow:0 0 6px #F43F5E; }
+    body.theme-cyberpunk .roulette-cell.black { background:#050b14 !important; box-shadow:inset 0 0 0 1px #06B6D4; }
+    body.theme-cyberpunk .roulette-cell.green { background:#06B6D4 !important; color:#000 !important; box-shadow:0 0 8px #06B6D4; }
+    body.theme-cyberpunk .roulette-pointer {
+        color:#06B6D4 !important; text-shadow:0 0 6px #06B6D4, 0 0 12px #06B6D4;
+    }
+
+    /* Cyberpunk: 경마(SANDEVISTAN RACE) - 로봇 말 잔상(모션 블러) 효과 */
+    body.theme-cyberpunk .horse-emoji.running {
+        filter: drop-shadow(-10px 0 4px rgba(6,182,212,0.6)) drop-shadow(-20px 0 6px rgba(124,58,237,0.4));
+    }
+
     /* 2. Medieval Tavern */
     body.theme-medieval {
         --bg-color:#2c1e16; --panel-color:#2c1e16; --panel-light:#3a2718;
@@ -547,28 +593,28 @@
                 <div id="themeBanner" class="k-illegal-banner hidden"></div>
                 <div class="lobby-grid">
                     <div class="lobby-card" onclick="showView('mines')">
-                        <div class="icon">💣</div>
+                        <div class="icon" id="mineCardIcon">💣</div>
                         <div class="name" id="mineCardName">MINES</div>
                     </div>
                     <div class="lobby-card" onclick="showView('blackjack')">
-                        <div class="icon">🃏</div>
-                        <div class="name">BLACKJACK</div>
+                        <div class="icon" id="blackjackCardIcon">🃏</div>
+                        <div class="name" id="blackjackCardName">BLACKJACK</div>
                     </div>
                     <div class="lobby-card" onclick="showView('slots')">
-                        <div class="icon">🎰</div>
+                        <div class="icon" id="slotsCardIcon">🎰</div>
                         <div class="name" id="slotsCardName">SLOTS</div>
                     </div>
                     <div class="lobby-card" onclick="showView('horse')">
-                        <div class="icon">🐎</div>
-                        <div class="name">HORSE RACE</div>
+                        <div class="icon" id="horseCardIcon">🐎</div>
+                        <div class="name" id="horseCardName">HORSE RACE</div>
                     </div>
                     <div class="lobby-card" onclick="showView('roulette')">
-                        <div class="icon">🔴</div>
-                        <div class="name">ROULETTE</div>
+                        <div class="icon" id="rouletteCardIcon">🔴</div>
+                        <div class="name" id="rouletteCardName">ROULETTE</div>
                     </div>
                     <div class="lobby-card" onclick="showView('market')">
-                        <div class="icon">📈</div>
-                        <div class="name">MARKET</div>
+                        <div class="icon" id="marketCardIcon">📈</div>
+                        <div class="name" id="marketCardName">MARKET</div>
                     </div>
                     <div class="lobby-card" onclick="showView('shop')">
                         <div class="icon">🏪</div>
@@ -1118,7 +1164,24 @@
         {
             id: 'cyberpunk', name: 'CYBERPUNK NEON', price: 100000000000,
             swatches: ['#0B0E14', '#7C3AED', '#06B6D4', '#F43F5E'],
-            labels: { balanceTitle: 'CREDITS', mineCardName: 'CYBER MINES', slotsCardName: 'NEON SLOTS' }
+            labels: {
+                balanceTitle: 'CREDITS',
+                mineCardName: 'CYBER PSYCHO HUNT',
+                slotsCardName: 'CHROME JACKPOT',
+                blackjackCardName: 'DATA HACK',
+                horseCardName: 'SANDEVISTAN RACE',
+                rouletteCardName: 'NEON ROULETTE',
+                marketCardName: 'MEGACORP SECURITIES'
+            },
+            icons: { mine: '🧠', blackjack: '💾', slots: '🎰', horse: '🤖', roulette: '🌀', market: '📡' },
+            jackpotText: '>> JACKPOT.EXE',
+            slotIcons: ['💾', '👁️', '🔋', '🛰️', '🤖', '⚡'],
+            horseIcon: '🤖',
+            marketNames: {
+                AAPL: 'KUROMORI DYNAMICS', MSFT: 'CHROMEDYNE OS', TSLA: 'BLACKICE MOTORS',
+                AMZN: 'NEONOVA LOGISTICS', NVDA: 'SYNAPTECH CORE',
+                BTC: 'EDDIE (크레딧체인)', ETH: 'GHOSTCOIN', SOL: 'NETRUNNER COIN', DOGE: 'SCAV-COIN'
+            }
         },
         {
             id: 'medieval', name: 'MEDIEVAL TAVERN', price: 100000000000,
@@ -1159,11 +1222,23 @@
         document.body.className = id === 'classic' ? '' : ('theme-' + id);
         const theme = getTheme(id);
         const labels = (theme && theme.labels) || {};
+        const icons = (theme && theme.icons) || {};
 
         document.getElementById('balanceTitleLabel').innerText = labels.balanceTitle || 'BALANCE';
         document.getElementById('leaderboardTitle').innerText = '🏆 ' + (labels.leaderboardTitle || 'HIGH SCORE');
         document.getElementById('mineCardName').innerText = labels.mineCardName || 'MINES';
         document.getElementById('slotsCardName').innerText = labels.slotsCardName || 'SLOTS';
+        document.getElementById('blackjackCardName').innerText = labels.blackjackCardName || 'BLACKJACK';
+        document.getElementById('horseCardName').innerText = labels.horseCardName || 'HORSE RACE';
+        document.getElementById('rouletteCardName').innerText = labels.rouletteCardName || 'ROULETTE';
+        document.getElementById('marketCardName').innerText = labels.marketCardName || 'MARKET';
+
+        document.getElementById('mineCardIcon').innerText = icons.mine || '💣';
+        document.getElementById('blackjackCardIcon').innerText = icons.blackjack || '🃏';
+        document.getElementById('slotsCardIcon').innerText = icons.slots || '🎰';
+        document.getElementById('horseCardIcon').innerText = icons.horse || '🐎';
+        document.getElementById('rouletteCardIcon').innerText = icons.roulette || '🔴';
+        document.getElementById('marketCardIcon').innerText = icons.market || '📈';
 
         const bannerEl = document.getElementById('themeBanner');
         if (theme && theme.banner) {
@@ -1171,6 +1246,13 @@
             bannerEl.classList.remove('hidden');
         } else {
             bannerEl.classList.add('hidden');
+        }
+
+        // 이미 열려있는 게임 화면이 있다면 테마가 바뀐 즉시 다시 그려서 심볼/이름을 갱신
+        if (typeof slotGridData !== 'undefined' && slotGridData.length) renderSlotGrid();
+        if (typeof renderMarketLists === 'function' && currentView === 'market') renderMarketLists();
+        if (typeof renderHorsePicks === 'function' && currentView === 'horse' && !raceInProgress) {
+            renderHorsePicks(); renderHorseTrack();
         }
     }
 
@@ -1637,6 +1719,14 @@
         return SLOT_SYMBOLS[0].symbol;
     }
 
+    // 테마가 지정한 아이콘 세트가 있으면 화면 표시용 글리프만 바꿔치기 (당첨 판정은 항상 원본 심볼 기준)
+    function themedSlotIcon(baseSymbol) {
+        const theme = getTheme(equippedTheme);
+        if (!theme || !theme.slotIcons) return baseSymbol;
+        const idx = SLOT_SYMBOLS.findIndex(s => s.symbol === baseSymbol);
+        return (idx >= 0 && theme.slotIcons[idx]) ? theme.slotIcons[idx] : baseSymbol;
+    }
+
     let slotGridData = [];
 
     function initSlotGrid() {
@@ -1659,7 +1749,7 @@
                 const cell = document.createElement('div');
                 cell.classList.add('slot-cell');
                 if (winSet.has(`${row}-${col}`)) cell.classList.add('payline');
-                cell.innerText = slotGridData[row][col];
+                cell.innerText = themedSlotIcon(slotGridData[row][col]);
                 gridEl.appendChild(cell);
             }
         }
@@ -1734,7 +1824,7 @@
                 for (let col = 0; col < 5; col++) {
                     if (colStopped[col]) continue;
                     const cell = gridEl.children[row * 5 + col];
-                    if (cell) cell.innerText = pickRandomSymbol();
+                    if (cell) cell.innerText = themedSlotIcon(pickRandomSymbol());
                 }
             }
         }, 90);
@@ -1746,7 +1836,7 @@
             for (let row = 0; row < 3; row++) {
                 const cell = gridEl.children[row * 5 + col];
                 cell.classList.remove('spinning');
-                cell.innerText = finalGrid[row][col];
+                cell.innerText = themedSlotIcon(finalGrid[row][col]);
                 cell.classList.add('stopped');
             }
         }
@@ -1765,7 +1855,7 @@
             balance += winAmount;
             await syncBalanceToDB(); updateBalanceUI();
 
-            const detail = wins.map(w => `${w.lineName} ${w.symbol}x${w.count}(x${w.multiplier})`).join(' × ');
+            const detail = wins.map(w => `${w.lineName} ${themedSlotIcon(w.symbol)}x${w.count}(x${w.multiplier})`).join(' × ');
             const comboText = wins.length > 1 ? ` [${wins.length}-LINE COMBO!]` : '';
             document.getElementById('slotResult').innerText = `🎉 ${detail} = TOTAL x${totalMultiplier}! WON ${winAmount.toLocaleString()} kee!${comboText}${themedJackpotSuffix()}`;
             document.getElementById('slotResult').style.color = 'var(--gold)';
@@ -1793,6 +1883,11 @@
     let selectedHorse = 0;
     let raceInProgress = false;
 
+    function themedHorseIcon() {
+        const theme = getTheme(equippedTheme);
+        return (theme && theme.horseIcon) ? theme.horseIcon : '🐎';
+    }
+
     function initHorseView() {
         renderHorsePicks();
         renderHorseTrack();
@@ -1800,8 +1895,9 @@
 
     function renderHorsePicks() {
         const sel = document.getElementById('horseSelect');
+        const icon = themedHorseIcon();
         sel.innerHTML = HORSES.map((h, i) =>
-            `<div class="horse-pick ${i === selectedHorse ? 'active' : ''}" data-i="${i}">🐎 ${h.name}<br>x${h.multiplier}</div>`
+            `<div class="horse-pick ${i === selectedHorse ? 'active' : ''}" data-i="${i}">${icon} ${h.name}<br>x${h.multiplier}</div>`
         ).join('');
         Array.from(sel.children).forEach(el => {
             el.onclick = () => {
@@ -1814,8 +1910,9 @@
 
     function renderHorseTrack() {
         const track = document.getElementById('horseTrack');
+        const icon = themedHorseIcon();
         track.innerHTML = HORSES.map((h, i) =>
-            `<div class="horse-lane"><span class="flag">🏁</span><div class="horse-emoji" id="horse-${i}">🐎</div></div>`
+            `<div class="horse-lane"><span class="flag">🏁</span><div class="horse-emoji" id="horse-${i}">${icon}</div></div>`
         ).join('');
     }
 
@@ -2414,6 +2511,11 @@
         }
     }
 
+    function themedAssetName(asset) {
+        const theme = getTheme(equippedTheme);
+        return (theme && theme.marketNames && theme.marketNames[asset.symbol]) || asset.name;
+    }
+
     function renderMarketList(containerId, assets) {
         const container = document.getElementById(containerId);
         const epoch = currentMarketEpoch();
@@ -2437,7 +2539,7 @@
             return `
             <div class="market-row">
                 <div class="market-info">
-                    <div class="market-name">${a.name} <span class="market-ticker">${a.symbol}</span></div>
+                    <div class="market-name">${themedAssetName(a)} <span class="market-ticker">${a.symbol}</span></div>
                     <div class="market-price">$${formatPrice(price)}<span class="market-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</span></div>
                     <div class="market-holding">${holdingLine}</div>
                 </div>
