@@ -236,13 +236,20 @@
     .market-chart { width:120px; height:42px; background:var(--ink); border:2px solid #000; display:block; }
     @media (max-width:480px) { .market-chart { width:90px; height:36px; } }
 
-    /* ===== 캔들차트 팝업 ===== */
-    .chart-modal-content { max-width:640px; width:95%; }
-    .chart-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
-    .chart-price-now { font-size:1.1rem; }
-    .chart-canvas-wrap { position:relative; width:100%; border:3px solid #000; background:var(--ink); }
-    #chartCanvas { display:block; width:100%; touch-action:none; cursor:grab; }
-    #chartCanvas.dragging { cursor:grabbing; }
+    /* ===== 캔들차트 플로팅 윈도우 (드래그 이동/리사이즈/전체화면, 여러 개 동시에) ===== */
+    #chartWindowLayer { position:fixed; inset:0; pointer-events:none; z-index:900; }
+    .chart-window { position:fixed; pointer-events:auto; background:var(--panel-color); border:4px solid #000; box-shadow:6px 6px 0 0 #000; display:flex; flex-direction:column; min-width:260px; min-height:220px; }
+    .chart-window.fullscreen { left:0 !important; top:0 !important; width:100vw !important; height:100vh !important; }
+    .chart-window-titlebar { background:var(--panel-light); border-bottom:3px solid #000; padding:8px 10px; display:flex; justify-content:space-between; align-items:center; gap:8px; cursor:move; font-family:'Press Start 2P', monospace; font-size:0.6rem; color:var(--gold); user-select:none; flex-shrink:0; }
+    .chart-window-price { font-family:'VT323', monospace; font-size:1rem; color:var(--text-color); }
+    .chart-window-controls { display:flex; gap:6px; flex-shrink:0; }
+    .chart-win-btn { background:var(--ink); border:2px solid #000; color:var(--text-color); font-size:0.7rem; width:24px; height:24px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-family:'Press Start 2P', monospace; }
+    .chart-win-btn:hover { background:var(--pink); color:#000; }
+    .chart-window-body { flex:1; display:flex; flex-direction:column; padding:8px; gap:6px; overflow:hidden; min-height:0; }
+    .chart-window-canvas-wrap { position:relative; flex:1; min-height:0; width:100%; border:3px solid #000; background:var(--ink); }
+    .chart-window-canvas-wrap canvas { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
+    .chart-window-canvas-wrap canvas.dragging { cursor:grabbing; }
+    .chart-window-resize { position:absolute; right:0; bottom:0; width:16px; height:16px; cursor:nwse-resize; background:repeating-linear-gradient(135deg, #000 0 2px, transparent 2px 4px); }
 
     /* ===== Stock Ticker (always-on top bar) ===== */
     .stock-ticker {
@@ -413,18 +420,7 @@
     </div>
 </div>
 
-<div id="chartModal" class="modal-overlay hidden">
-    <div class="modal-content chart-modal-content">
-        <div class="chart-toolbar">
-            <h2 id="chartModalTitle" style="font-size:1rem;">AAPL</h2>
-            <span class="chart-price-now" id="chartPriceNow"></span>
-        </div>
-        <div class="chart-canvas-wrap">
-            <canvas id="chartCanvas" width="600" height="380"></canvas>
-        </div>
-        <button class="btn-secondary pixel-btn" onclick="closeChartModal()" style="width:100%; margin-top:12px;">CLOSE</button>
-    </div>
-</div>
+<div id="chartWindowLayer"></div>
 
 <div id="profileModal" class="modal-overlay hidden">
     <div class="modal-content" style="max-width:420px; text-align:left;">
@@ -1939,85 +1935,199 @@
         return `<svg class="market-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">${shapes}</svg>`;
     }
 
-    // ===== 전체 캔들차트 팝업 (확대: 마우스 휠 / 이동: 좌클릭 드래그) =====
-    let chartAsset = null;
-    let chartViewCount = 60;
-    let chartOffset = 0;
-    let chartDragging = false;
-    let chartDragStartX = 0;
-    let chartDragStartOffset = 0;
-    let chartRefreshTimer = null;
-    let chartListenersAttached = false;
+    // ===== 캔들차트 플로팅 윈도우 매니저 =====
+    // 여러 종목을 동시에 띄워놓고, 다른 게임 화면으로 이동해도 계속 떠 있음
+    const chartWindows = {}; // symbol -> window state
+    let chartWinZCounter = 1000;
+    let chartWinCascade = 0;
 
     window.openChartModal = function(symbol) {
-        chartAsset = ALL_MARKET.find(a => a.symbol === symbol);
-        if (!chartAsset) return;
-        chartViewCount = 60;
-        chartOffset = 0;
-        document.getElementById('chartModalTitle').innerText = `${chartAsset.name} (${chartAsset.symbol})`;
-        document.getElementById('chartModal').classList.remove('hidden');
-        setupChartCanvas();
-        drawChart();
-        if (!chartRefreshTimer) {
-            chartRefreshTimer = setInterval(() => {
-                if (!document.getElementById('chartModal').classList.contains('hidden')) drawChart();
-            }, 15000);
+        if (chartWindows[symbol]) {
+            bringChartWindowToFront(chartWindows[symbol]);
+            return;
         }
+        const asset = ALL_MARKET.find(a => a.symbol === symbol);
+        if (!asset) return;
+
+        const layer = document.getElementById('chartWindowLayer');
+        const el = document.createElement('div');
+        el.className = 'chart-window';
+        const cascadeOffset = (chartWinCascade++ % 6) * 28;
+        const initW = 420, initH = 320;
+        el.style.left = (40 + cascadeOffset) + 'px';
+        el.style.top = (90 + cascadeOffset) + 'px';
+        el.style.width = initW + 'px';
+        el.style.height = initH + 'px';
+        el.innerHTML = `
+            <div class="chart-window-titlebar">
+                <span>${asset.name} (${asset.symbol})</span>
+                <span class="chart-window-price"></span>
+                <div class="chart-window-controls">
+                    <button class="chart-win-btn" data-action="fullscreen">⛶</button>
+                    <button class="chart-win-btn" data-action="close">✕</button>
+                </div>
+            </div>
+            <div class="chart-window-body">
+                <div class="chart-window-canvas-wrap">
+                    <canvas></canvas>
+                    <div class="chart-window-resize"></div>
+                </div>
+            </div>
+        `;
+        layer.appendChild(el);
+
+        const win = {
+            symbol, asset, el,
+            canvas: el.querySelector('canvas'),
+            priceEl: el.querySelector('.chart-window-price'),
+            viewCount: 60,
+            offset: 0,
+            dragging: false,
+            resizing: false,
+            fullscreen: false,
+            prevBounds: null,
+            refreshTimer: null
+        };
+        chartWindows[symbol] = win;
+        bringChartWindowToFront(win);
+        setupChartWindowEvents(win);
+        setupChartWindowCanvas(win);
+        drawChartWindow(win);
+        win.refreshTimer = setInterval(() => drawChartWindow(win), 15000);
     };
 
-    window.closeChartModal = function() {
-        document.getElementById('chartModal').classList.add('hidden');
-    };
+    function bringChartWindowToFront(win) {
+        chartWinZCounter += 1;
+        win.el.style.zIndex = chartWinZCounter;
+    }
 
-    function setupChartCanvas() {
-        const canvas = document.getElementById('chartCanvas');
-        const wrap = canvas.parentElement;
+    function closeChartWindow(win) {
+        if (win.refreshTimer) clearInterval(win.refreshTimer);
+        win.el.remove();
+        delete chartWindows[win.symbol];
+    }
+
+    function setupChartWindowCanvas(win) {
+        const wrap = win.canvas.parentElement;
         const cssWidth = wrap.clientWidth;
-        const cssHeight = Math.max(260, Math.round(cssWidth * 0.62));
+        const cssHeight = wrap.clientHeight;
         const dpr = window.devicePixelRatio || 1;
-        canvas.style.height = cssHeight + 'px';
-        canvas.width = Math.round(cssWidth * dpr);
-        canvas.height = Math.round(cssHeight * dpr);
-        canvas._dpr = dpr;
-        canvas._cssWidth = cssWidth;
-        canvas._cssHeight = cssHeight;
+        win.canvas.width = Math.round(cssWidth * dpr);
+        win.canvas.height = Math.round(cssHeight * dpr);
+        win.canvas._dpr = dpr;
+        win.canvas._cssWidth = cssWidth;
+        win.canvas._cssHeight = cssHeight;
+    }
 
-        if (chartListenersAttached) return;
-        chartListenersAttached = true;
+    function setupChartWindowEvents(win) {
+        const el = win.el;
+        const titlebar = el.querySelector('.chart-window-titlebar');
+        const resizeHandle = el.querySelector('.chart-window-resize');
 
+        el.addEventListener('mousedown', () => bringChartWindowToFront(win));
+
+        el.querySelectorAll('.chart-win-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const action = btn.dataset.action;
+                if (action === 'close') closeChartWindow(win);
+                if (action === 'fullscreen') toggleChartWindowFullscreen(win);
+            });
+        });
+
+        // 타이틀바 드래그 = 창 이동
+        let moveStartX = 0, moveStartY = 0, moveStartLeft = 0, moveStartTop = 0, moving = false;
+        titlebar.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.chart-win-btn') || win.fullscreen) return;
+            moving = true;
+            moveStartX = e.clientX; moveStartY = e.clientY;
+            moveStartLeft = el.offsetLeft; moveStartTop = el.offsetTop;
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!moving) return;
+            el.style.left = (moveStartLeft + (e.clientX - moveStartX)) + 'px';
+            el.style.top = (moveStartTop + (e.clientY - moveStartY)) + 'px';
+        });
+        window.addEventListener('mouseup', () => { moving = false; });
+
+        // 우측 하단 핸들 드래그 = 창 크기 조절(줄이기/키우기)
+        let resizeStartX = 0, resizeStartY = 0, resizeStartW = 0, resizeStartH = 0;
+        resizeHandle.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            if (win.fullscreen) return;
+            win.resizing = true;
+            resizeStartX = e.clientX; resizeStartY = e.clientY;
+            resizeStartW = el.offsetWidth; resizeStartH = el.offsetHeight;
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!win.resizing) return;
+            const newW = Math.max(260, resizeStartW + (e.clientX - resizeStartX));
+            const newH = Math.max(220, resizeStartH + (e.clientY - resizeStartY));
+            el.style.width = newW + 'px';
+            el.style.height = newH + 'px';
+            setupChartWindowCanvas(win);
+            drawChartWindow(win);
+        });
+        window.addEventListener('mouseup', () => {
+            if (win.resizing) { win.resizing = false; }
+        });
+
+        // 캔버스 위 좌클릭 드래그 = 차트 이동(팬), 휠 = 확대/축소
+        const canvas = win.canvas;
+        let dragStartX = 0, dragStartOffset = 0;
         canvas.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
-            chartDragging = true;
-            chartDragStartX = e.clientX;
-            chartDragStartOffset = chartOffset;
+            e.stopPropagation();
+            bringChartWindowToFront(win);
+            win.dragging = true;
+            dragStartX = e.clientX;
+            dragStartOffset = win.offset;
             canvas.classList.add('dragging');
         });
         window.addEventListener('mousemove', (e) => {
-            if (!chartDragging || !chartAsset) return;
-            const c = document.getElementById('chartCanvas');
-            const candleSlot = c._cssWidth / chartViewCount;
-            const deltaX = e.clientX - chartDragStartX;
-            const deltaCandles = Math.round(deltaX / candleSlot);
-            chartOffset = Math.max(0, chartDragStartOffset + deltaCandles);
-            drawChart();
+            if (!win.dragging) return;
+            const candleSlot = win.canvas._cssWidth / win.viewCount;
+            const deltaCandles = Math.round((e.clientX - dragStartX) / candleSlot);
+            win.offset = Math.max(0, dragStartOffset + deltaCandles);
+            drawChartWindow(win);
         });
         window.addEventListener('mouseup', () => {
-            if (chartDragging) {
-                chartDragging = false;
-                document.getElementById('chartCanvas').classList.remove('dragging');
-            }
+            if (win.dragging) { win.dragging = false; canvas.classList.remove('dragging'); }
         });
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             const dir = e.deltaY > 0 ? 1 : -1;
-            chartViewCount = Math.min(200, Math.max(20, chartViewCount + dir * 6));
-            drawChart();
+            win.viewCount = Math.min(200, Math.max(20, win.viewCount + dir * 6));
+            drawChartWindow(win);
         }, { passive: false });
+
+        window.addEventListener('resize', () => {
+            if (win.fullscreen) { setupChartWindowCanvas(win); drawChartWindow(win); }
+        });
     }
 
-    function drawChart() {
-        if (!chartAsset) return;
-        const canvas = document.getElementById('chartCanvas');
+    function toggleChartWindowFullscreen(win) {
+        const el = win.el;
+        if (!win.fullscreen) {
+            win.prevBounds = { left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height };
+            el.classList.add('fullscreen');
+            win.fullscreen = true;
+        } else {
+            el.classList.remove('fullscreen');
+            if (win.prevBounds) {
+                el.style.left = win.prevBounds.left;
+                el.style.top = win.prevBounds.top;
+                el.style.width = win.prevBounds.width;
+                el.style.height = win.prevBounds.height;
+            }
+            win.fullscreen = false;
+        }
+        setupChartWindowCanvas(win);
+        drawChartWindow(win);
+    }
+
+    function drawChartWindow(win) {
+        const canvas = win.canvas;
         const ctx = canvas.getContext('2d');
         const dpr = canvas._dpr || 1;
         const w = canvas._cssWidth;
@@ -2027,10 +2137,10 @@
         ctx.clearRect(0, 0, w, h);
 
         const nowEpoch = currentMarketEpoch();
-        const rightEpoch = nowEpoch - chartOffset;
-        const leftEpoch = rightEpoch - chartViewCount + 1;
+        const rightEpoch = nowEpoch - win.offset;
+        const leftEpoch = rightEpoch - win.viewCount + 1;
         const candles = [];
-        for (let e = leftEpoch; e <= rightEpoch; e++) candles.push(getCandle(chartAsset, e));
+        for (let e = leftEpoch; e <= rightEpoch; e++) candles.push(getCandle(win.asset, e));
 
         const volumeAreaH = h * 0.2;
         const priceAreaH = h - volumeAreaH - 8;
@@ -2104,11 +2214,10 @@
 
         ctx.restore();
 
-        const priceNowEl = document.getElementById('chartPriceNow');
         const prevClose = candles.length > 1 ? candles[candles.length - 2].close : lastClose;
         const up = lastClose >= prevClose;
-        priceNowEl.innerText = `$${formatPrice(lastClose)}`;
-        priceNowEl.style.color = up ? STOCK_UP_COLOR : STOCK_DOWN_COLOR;
+        win.priceEl.innerText = `$${formatPrice(lastClose)}`;
+        win.priceEl.style.color = up ? STOCK_UP_COLOR : STOCK_DOWN_COLOR;
     }
 
     function initMarketView() {
