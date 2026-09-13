@@ -284,109 +284,169 @@
     .theme-swatch { display:flex; gap:4px; }
     .theme-swatch span { width:16px; height:16px; border:2px solid #000; display:inline-block; }
 
+    /* 공통: 테마가 적용되면 기본 픽셀 프레임을 theme 쪽 룰이 덮어쓸 수 있도록 !important 사용 */
+
     /* 1. Cyberpunk Neon */
     body.theme-cyberpunk {
-        --bg-color:#0B0E14; --panel-color:#12151f; --panel-light:#1b2030;
-        --pink:#F43F5E; --blue:#06B6D4; --gold:#7C3AED; --ink:#05060a;
+        --bg-color:#050b14; --panel-color:#0a0f1a; --panel-light:#0f1624;
+        --pink:#F43F5E; --blue:#06B6D4; --gold:#facc15; --ink:#03050a;
+        --text-color:#06B6D4; --text-muted:#3b82f6;
+        font-family: 'Courier New', monospace;
     }
-    body.theme-cyberpunk .header, body.theme-cyberpunk .pixel-panel,
-    body.theme-cyberpunk .board-container, body.theme-cyberpunk .modal-content,
-    body.theme-cyberpunk .lobby-card, body.theme-cyberpunk .leaderboard,
-    body.theme-cyberpunk .controls {
-        background-color: rgba(18,21,31,0.65); backdrop-filter: blur(6px);
-        box-shadow: 0 0 14px var(--blue), 4px 4px 0 0 #000;
+    body.theme-cyberpunk .header, body.theme-cyberpunk .lobby-card, body.theme-cyberpunk .modal-content {
+        background-color:#050b14 !important; border:2px solid #7C3AED !important;
+        box-shadow:0 0 15px #7C3AED, inset 0 0 10px rgba(124,58,237,0.5) !important;
+        clip-path: polygon(0 0, 95% 0, 100% 15%, 100% 100%, 5% 100%, 0 85%);
     }
-    body.theme-cyberpunk .brand {
-        animation: cyberGlitch 3.5s infinite;
-        text-shadow: 2px 0 var(--pink), -2px 0 var(--blue);
+    body.theme-cyberpunk .board-container, body.theme-cyberpunk .controls, body.theme-cyberpunk .leaderboard {
+        background-color:#050b14 !important; border:2px solid #7C3AED !important;
+        box-shadow:0 0 15px #7C3AED, inset 0 0 10px rgba(124,58,237,0.5) !important;
+    }
+    body.theme-cyberpunk h1, body.theme-cyberpunk h2, body.theme-cyberpunk h3,
+    body.theme-cyberpunk .brand, body.theme-cyberpunk .lobby-card .name {
+        font-family:'Courier New', monospace !important;
+        color:#facc15 !important; text-shadow:0 0 5px #facc15; animation: cyberGlitch 3.5s infinite;
     }
     @keyframes cyberGlitch {
-        0%, 92%, 100% { transform: translate(0,0); text-shadow: 2px 0 var(--pink), -2px 0 var(--blue); }
+        0%, 92%, 100% { transform: translate(0,0); }
         93% { transform: translate(-2px,1px); }
-        95% { transform: translate(2px,-1px); text-shadow: -2px 0 var(--pink), 2px 0 var(--blue); }
+        95% { transform: translate(2px,-1px); }
         97% { transform: translate(0,0); }
     }
+    body.theme-cyberpunk .pixel-btn, body.theme-cyberpunk .btn-main, body.theme-cyberpunk .btn-secondary,
+    body.theme-cyberpunk .tab-btn, body.theme-cyberpunk .back-btn, body.theme-cyberpunk .btn-logout {
+        background:rgba(6,182,212,0.1) !important; border:1px solid #06B6D4 !important;
+        color:#06B6D4 !important; box-shadow:none !important; text-shadow:none;
+    }
+    body.theme-cyberpunk .pixel-btn:hover:not(:disabled) { background:rgba(6,182,212,0.3) !important; box-shadow:0 0 10px #06B6D4 !important; }
+    body.theme-cyberpunk .pixel-btn:active:not(:disabled) { transform:none !important; }
 
     /* 2. Medieval Tavern */
     body.theme-medieval {
-        --bg-color:#1C1917; --panel-color:#2b241d; --panel-light:#3a2f24;
-        --pink:#881337; --blue:#D97706; --gold:#F59E0B; --ink:#100d0a;
-        font-family: 'VT323', monospace;
+        --bg-color:#2c1e16; --panel-color:#2c1e16; --panel-light:#3a2718;
+        --pink:#881337; --blue:#d97706; --gold:#fcd34d; --ink:#1a1109;
+        --text-color:#fcd34d; --text-muted:#c9a26a;
+        font-family: 'Cinzel', 'Times New Roman', serif;
     }
-    body.theme-medieval h1, body.theme-medieval h2, body.theme-medieval h3,
-    body.theme-medieval .pixel-font, body.theme-medieval button, body.theme-medieval .tab-btn,
-    body.theme-medieval .lobby-card .name, body.theme-medieval .rank-money,
-    body.theme-medieval .balance-amount, body.theme-medieval .brand {
-        font-family: 'Cinzel', serif;
+    body.theme-medieval .header, body.theme-medieval .lobby-card, body.theme-medieval .modal-content,
+    body.theme-medieval .board-container, body.theme-medieval .controls, body.theme-medieval .leaderboard {
+        background-color:#2c1e16 !important;
+        background-image: radial-gradient(circle at 50% 0%, #4a3020, #2c1e16) !important;
+        border:6px solid #854d0e !important; border-radius:20px 20px 5px 5px !important;
+        box-shadow:8px 8px 20px rgba(0,0,0,0.8) !important;
     }
-    body.theme-medieval .header, body.theme-medieval .board-container,
-    body.theme-medieval .modal-content, body.theme-medieval .lobby-card,
-    body.theme-medieval .leaderboard, body.theme-medieval .controls {
-        background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.15) 0 3px, transparent 3px 8px);
+    body.theme-medieval h1, body.theme-medieval h2, body.theme-medieval h3, body.theme-medieval .brand {
+        font-family:'Cinzel', 'Times New Roman', serif !important;
+        text-align:center; border-bottom:2px dashed #854d0e; padding-bottom:10px; display:block;
     }
+    body.theme-medieval .pixel-btn, body.theme-medieval .btn-main, body.theme-medieval .btn-secondary,
+    body.theme-medieval .tab-btn, body.theme-medieval .back-btn, body.theme-medieval .btn-logout {
+        font-family:'Cinzel', 'Times New Roman', serif !important;
+        background:#78350f !important; border:2px solid #d97706 !important; color:#fef3c7 !important;
+        border-radius:5px !important;
+        box-shadow: inset 0 0 8px #000, 3px 3px 5px rgba(0,0,0,0.5) !important;
+    }
+    body.theme-medieval .pixel-btn:active:not(:disabled) { transform:none !important; }
 
-    /* 3. Lo-Fi Study & Chill */
+    /* 3. Lo-Fi Study & Chill (neumorphism) */
     body.theme-lofi {
-        --bg-color:#F3E9DC; --panel-color:#D8E2DC; --panel-light:#C0D6DF;
-        --pink:#5E503F; --blue:#C0D6DF; --gold:#5E503F; --ink:#EFE6D8;
-        --text-color:#3f3a33; --text-muted:#7a7266;
+        --bg-color:#f3e9dc; --panel-color:#f3e9dc; --panel-light:#ecdfcd;
+        --pink:#7f5539; --blue:#9c6644; --gold:#7f5539; --ink:#f3e9dc;
+        --text-color:#7f5539; --text-muted:#9c6644;
     }
-    body.theme-lofi .pixel-panel, body.theme-lofi .header, body.theme-lofi .board-container,
-    body.theme-lofi .modal-content, body.theme-lofi .lobby-card, body.theme-lofi .leaderboard,
-    body.theme-lofi .controls, body.theme-lofi .pixel-input, body.theme-lofi .pixel-btn,
-    body.theme-lofi .tile, body.theme-lofi .slot-cell, body.theme-lofi .playing-card {
-        border-radius: 14px !important; box-shadow: 3px 3px 0 0 rgba(94,80,63,0.4) !important;
+    body.theme-lofi .header, body.theme-lofi .lobby-card, body.theme-lofi .modal-content,
+    body.theme-lofi .board-container, body.theme-lofi .controls, body.theme-lofi .leaderboard {
+        background-color:#f3e9dc !important; border:none !important; border-radius:40px !important;
+        box-shadow:12px 12px 24px #c3baaf, -12px -12px 24px #ffffff !important;
     }
-    body.theme-lofi .pixel-btn:active:not(:disabled) { box-shadow: 1px 1px 0 0 rgba(94,80,63,0.4) !important; }
+    body.theme-lofi h1, body.theme-lofi h2, body.theme-lofi h3, body.theme-lofi .brand {
+        color:#9c6644 !important; text-align:center;
+    }
+    body.theme-lofi .pixel-btn, body.theme-lofi .btn-main, body.theme-lofi .btn-secondary,
+    body.theme-lofi .tab-btn, body.theme-lofi .back-btn, body.theme-lofi .btn-logout, body.theme-lofi .pixel-input {
+        background:#e6ccb2 !important; border:none !important; color:#7f5539 !important;
+        border-radius:25px !important;
+        box-shadow:6px 6px 12px #d1bba2, -6px -6px 12px #fbeadd !important;
+    }
+    body.theme-lofi .pixel-btn:active:not(:disabled) {
+        box-shadow: inset 4px 4px 8px #d1bba2, inset -4px -4px 8px #fbeadd !important; transform:none !important;
+    }
+    body.theme-lofi .tile, body.theme-lofi .slot-cell, body.theme-lofi .playing-card { border-radius:14px !important; }
 
     /* 4. Anime Arcade */
     body.theme-anime {
-        --bg-color:#FFFFFF; --panel-color:#FCE7F3; --panel-light:#FBCFE8;
-        --pink:#F472B6; --blue:#A855F7; --gold:#FACC15; --ink:#3b0764;
-        --text-color:#3b0764; --text-muted:#7e22ce;
+        --bg-color:#fff0f5; --panel-color:#fff0f5; --panel-light:#ffe4ef;
+        --pink:#f472b6; --blue:#d946ef; --gold:#facc15; --ink:#3b0764;
+        --text-color:#d946ef; --text-muted:#a855f7;
+        font-family:'Baloo 2', cursive; font-weight:700;
     }
-    body.theme-anime h1, body.theme-anime h2, body.theme-anime h3,
-    body.theme-anime .pixel-font, body.theme-anime button, body.theme-anime .tab-btn,
-    body.theme-anime .lobby-card .name, body.theme-anime .rank-money,
-    body.theme-anime .balance-amount, body.theme-anime .brand {
-        font-family: 'Baloo 2', cursive;
+    body.theme-anime .header, body.theme-anime .lobby-card, body.theme-anime .modal-content,
+    body.theme-anime .board-container, body.theme-anime .controls, body.theme-anime .leaderboard {
+        background-color:#fff0f5 !important; border:5px solid #f472b6 !important;
+        border-radius:30px 10px 30px 10px !important; box-shadow:8px 8px 0 #f472b6 !important;
     }
-    body.theme-anime .pixel-panel, body.theme-anime .header, body.theme-anime .board-container,
-    body.theme-anime .modal-content, body.theme-anime .lobby-card, body.theme-anime .leaderboard,
-    body.theme-anime .controls, body.theme-anime .pixel-btn {
-        border-radius: 20px !important;
+    body.theme-anime h1, body.theme-anime h2, body.theme-anime h3, body.theme-anime .brand {
+        font-family:'Baloo 2', cursive !important;
+        background:#f472b6 !important; color:#fff !important; padding:8px 14px;
+        border-radius:15px; display:inline-block;
     }
+    body.theme-anime .pixel-btn, body.theme-anime .btn-main, body.theme-anime .btn-secondary,
+    body.theme-anime .tab-btn, body.theme-anime .back-btn, body.theme-anime .btn-logout {
+        font-family:'Baloo 2', cursive !important;
+        background:#f472b6 !important; border:3px solid #fff !important; color:#fff !important;
+        border-radius:20px !important; transform:rotate(-3deg); box-shadow:4px 4px 0 rgba(244,114,182,0.5) !important;
+    }
+    body.theme-anime .pixel-btn:active:not(:disabled) { transform:rotate(-3deg) translate(2px,2px) !important; }
 
     /* 5. K-Illegal Sportsbook Meme */
     body.theme-k-illegal {
-        --bg-color:#000000; --panel-color:#111111; --panel-light:#1a1a1a;
-        --pink:#FF0000; --blue:#C0C0C0; --gold:#FFFF00; --ink:#000000;
+        --bg-color:#000000; --panel-color:#000000; --panel-light:#111111;
+        --pink:#ff0000; --blue:#ffffff; --gold:#ffff00; --ink:#000000;
+        --text-color:#ffff00; --text-muted:#ffffff;
+        font-weight:900;
     }
-    body.theme-k-illegal .header, body.theme-k-illegal .board-container,
-    body.theme-k-illegal .lobby-card {
-        animation: kFlash 1s infinite;
+    body.theme-k-illegal .header, body.theme-k-illegal .lobby-card, body.theme-k-illegal .modal-content,
+    body.theme-k-illegal .board-container, body.theme-k-illegal .controls, body.theme-k-illegal .leaderboard {
+        background:#000 !important; border:5px dashed #ff0000 !important; box-shadow:none !important;
+        animation:none !important; border-radius:0 !important;
     }
-    @keyframes kFlash {
-        0%, 100% { box-shadow: 6px 6px 0 0 #FF0000; }
-        50% { box-shadow: 6px 6px 0 0 #FFFF00; }
+    body.theme-k-illegal .rank-item, body.theme-k-illegal .market-row {
+        background:#111 !important; border:1px solid #444 !important; color:#fff !important;
     }
+    body.theme-k-illegal .pixel-btn, body.theme-k-illegal .btn-main, body.theme-k-illegal .btn-secondary,
+    body.theme-k-illegal .tab-btn, body.theme-k-illegal .back-btn, body.theme-k-illegal .btn-logout {
+        background:#111 !important; border:1px solid #444 !important; color:#fff !important; box-shadow:none !important;
+    }
+    @keyframes blink { 0%, 100% { opacity:1; } 50% { opacity:0; } }
     .k-illegal-banner {
-        background:#FFFF00; color:#FF0000; font-weight:900; text-align:center;
-        padding:6px; border:3px solid #000; margin-bottom:14px; animation:kFlash 0.8s infinite;
+        background:#ffff00 !important; color:#ff0000 !important; font-weight:900; text-align:center;
+        padding:6px 8px; border:none !important; margin-bottom:14px; animation:blink 0.8s infinite;
         font-size:0.9rem;
     }
 
     /* 6. North Korean Propaganda (satirical retro poster style) */
     body.theme-nk-propaganda {
-        --bg-color:#1F2937; --panel-color:#4B5563; --panel-light:#5b6472;
-        --pink:#DC2626; --blue:#FDE047; --gold:#FDE047; --ink:#111827;
+        --bg-color:#b91c1c; --panel-color:#b91c1c; --panel-light:#a11818;
+        --pink:#fde047; --blue:#fde047; --gold:#fde047; --ink:#7f1414;
+        --text-color:#fde047; --text-muted:#fca5a5;
+        font-weight:900;
     }
-    body.theme-nk-propaganda .header, body.theme-nk-propaganda .board-container,
-    body.theme-nk-propaganda .lobby-card, body.theme-nk-propaganda .modal-content {
-        background-image: repeating-linear-gradient(135deg, rgba(220,38,38,0.15) 0 10px, transparent 10px 20px);
-        border-color: var(--pink) !important;
+    body.theme-nk-propaganda .header, body.theme-nk-propaganda .lobby-card, body.theme-nk-propaganda .modal-content,
+    body.theme-nk-propaganda .board-container, body.theme-nk-propaganda .controls, body.theme-nk-propaganda .leaderboard {
+        background:#b91c1c !important; background-image:none !important;
+        border:12px solid #4b5563 !important; box-shadow:none !important; text-align:center;
     }
-    body.theme-nk-propaganda .brand::before { content:"★ "; color: var(--pink); }
+    body.theme-nk-propaganda h1, body.theme-nk-propaganda h2, body.theme-nk-propaganda h3, body.theme-nk-propaganda .brand {
+        border-bottom:5px solid #fde047; display:inline-block; padding-bottom:5px;
+    }
+    body.theme-nk-propaganda .brand::before { content:"★ "; }
+    body.theme-nk-propaganda .pixel-btn, body.theme-nk-propaganda .btn-main, body.theme-nk-propaganda .btn-secondary,
+    body.theme-nk-propaganda .tab-btn, body.theme-nk-propaganda .back-btn, body.theme-nk-propaganda .btn-logout {
+        background:#991b1b !important; border:5px solid #fde047 !important; color:#fde047 !important;
+        text-transform:uppercase; box-shadow:6px 6px 0 #4b5563 !important;
+    }
+    body.theme-nk-propaganda .pixel-btn:active:not(:disabled) { transform:none !important; }
+
 
 </style>
 </head>
@@ -815,6 +875,7 @@
                 document.getElementById('gameContainer').style.display = 'flex';
                 document.getElementById('currentUserDisplay').innerText = currentUser;
                 updateBalanceUI();
+                startBalanceSync();
                 applyTheme(equippedTheme);
                 showView('lobby');
                 startLeaderboardSync();
@@ -828,6 +889,7 @@
             document.getElementById('authModal').classList.remove('hidden');
             document.getElementById('gameContainer').style.display = 'none';
             stopStockTicker();
+            stopBalanceSync();
             document.body.className = '';
         }
     });
@@ -978,7 +1040,8 @@
             balance += amount;
             await syncBalanceToDB();
             updateBalanceUI();
-            errorEl.innerText = 'Transfer failed. Try again.';
+            console.error('Send kee error:', e);
+            errorEl.innerText = `Transfer failed (${e.code || e.message || 'unknown error'}). This is usually a Realtime Database rules issue.`;
             return;
         }
 
@@ -1202,6 +1265,25 @@
 
     function updateBalanceUI() {
         UI.balanceDisplay.innerText = `${balance.toLocaleString()}`;
+    }
+
+    // 잔액은 이제 DB를 실시간으로 구독해서 로컬 변수를 항상 최신 상태로 유지한다.
+    // (이 리스너가 없으면, 다른 기기/탭에 남아있던 낡은 balance 값으로 syncBalanceToDB()가
+    //  덮어써서 방금 받은 송금액이 사라지는 문제가 생김)
+    let balanceSyncRef = null;
+    function startBalanceSync() {
+        stopBalanceSync();
+        balanceSyncRef = db.ref('users/' + currentUid + '/balance');
+        balanceSyncRef.on('value', (snapshot) => {
+            const val = snapshot.val();
+            if (typeof val === 'number') {
+                balance = val;
+                updateBalanceUI();
+            }
+        });
+    }
+    function stopBalanceSync() {
+        if (balanceSyncRef) { balanceSyncRef.off(); balanceSyncRef = null; }
     }
 
     let allUsersCache = [];
