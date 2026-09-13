@@ -66,6 +66,12 @@
     .modal-content input.pixel-input { width:100%; padding:14px; margin-bottom:14px; text-align:center; }
     .error-msg { color: var(--pink); font-size:0.95rem; min-height:20px; margin-bottom:10px; }
 
+    /* ===== 송금 (Send) ===== */
+    .send-user-list { max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+    .send-user-row { display:flex; justify-content:space-between; align-items:center; background:var(--ink); border:2px solid #000; padding:9px 10px; cursor:pointer; font-size:1rem; }
+    .send-user-row.selected { border-color:var(--gold); background: rgba(249,226,175,0.15); }
+    .send-user-row .send-user-balance { color:var(--text-muted); font-size:0.8rem; }
+
     /* ===== 상단 아케이드 전광판 ===== */
     .container { display:flex; flex-direction:column; gap:20px; width:100%; max-width:900px; }
     .header {
@@ -420,6 +426,20 @@
     </div>
 </div>
 
+<div id="sendModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width:420px; text-align:left;">
+        <h2 style="text-align:center;">💸 SEND</h2>
+        <input class="pixel-input" type="text" id="sendSearchInput" placeholder="Search username" oninput="renderSendUserList()" style="width:100%; padding:12px; margin-bottom:12px;">
+        <div class="send-user-list" id="sendUserList"></div>
+        <input class="pixel-input" type="number" id="sendAmountInput" placeholder="Amount (kee)" min="1" style="width:100%; padding:12px; margin:12px 0;">
+        <div class="error-msg" id="sendError"></div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-main pixel-btn" onclick="sendKee()" style="flex:1;">SEND</button>
+            <button class="btn-secondary pixel-btn" onclick="closeSendModal()" style="flex:1;">CLOSE</button>
+        </div>
+    </div>
+</div>
+
 <div id="chartWindowLayer"></div>
 
 <div id="profileModal" class="modal-overlay hidden">
@@ -447,6 +467,7 @@
         <div class="user-panel">
             <span class="user-name" id="currentUserDisplay" onclick="openProfileModal()" style="cursor:pointer;" title="Open profile">P1</span>
             <button class="btn-logout pixel-btn" onclick="openMineModal()">⛏️ MINE</button>
+            <button class="btn-logout pixel-btn" onclick="openSendModal()">💸 SEND</button>
             <button class="btn-logout pixel-btn" onclick="logout()">LOGOUT</button>
         </div>
     </div>
@@ -896,6 +917,78 @@
     };
 
     // ==========================================
+    // 송금 (Send)
+    // ==========================================
+    let sendSelectedUid = null;
+
+    window.openSendModal = function() {
+        if (state.isPlaying || bjState.isPlaying || raceInProgress || rouletteSpinning) return alert('Finish your current game first.');
+        sendSelectedUid = null;
+        document.getElementById('sendSearchInput').value = '';
+        document.getElementById('sendAmountInput').value = '';
+        document.getElementById('sendError').innerText = '';
+        document.getElementById('sendError').style.color = 'var(--pink)';
+        document.getElementById('sendModal').classList.remove('hidden');
+        renderSendUserList();
+    };
+
+    window.closeSendModal = function() {
+        document.getElementById('sendModal').classList.add('hidden');
+    };
+
+    window.renderSendUserList = function() {
+        const listEl = document.getElementById('sendUserList');
+        const query = document.getElementById('sendSearchInput').value.trim().toLowerCase();
+        const filtered = allUsersCache.filter(u => u.uid !== currentUid && (!query || u.name.toLowerCase().includes(query)));
+        if (filtered.length === 0) {
+            listEl.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:10px;">No users found</div>';
+            return;
+        }
+        listEl.innerHTML = filtered.map(u => `
+            <div class="send-user-row ${u.uid === sendSelectedUid ? 'selected' : ''}" onclick="selectSendUser('${u.uid}')">
+                <span>${u.name}</span>
+                <span class="send-user-balance">${u.balance.toLocaleString()} kee</span>
+            </div>
+        `).join('');
+    };
+
+    window.selectSendUser = function(uid) {
+        sendSelectedUid = uid;
+        renderSendUserList();
+    };
+
+    window.sendKee = async function() {
+        const errorEl = document.getElementById('sendError');
+        errorEl.style.color = 'var(--pink)';
+        errorEl.innerText = '';
+
+        if (!sendSelectedUid) { errorEl.innerText = 'Select a user to send to.'; return; }
+        if (sendSelectedUid === currentUid) { errorEl.innerText = "You can't send to yourself."; return; }
+        const amount = parseFloat(document.getElementById('sendAmountInput').value);
+        if (isNaN(amount) || amount <= 0) { errorEl.innerText = 'Enter a valid amount.'; return; }
+        if (amount > balance) { errorEl.innerText = 'Not enough coins!'; return; }
+
+        balance -= amount;
+        await syncBalanceToDB();
+        updateBalanceUI();
+
+        try {
+            await db.ref('users/' + sendSelectedUid + '/balance').transaction(current => (current || 0) + amount);
+        } catch (e) {
+            balance += amount;
+            await syncBalanceToDB();
+            updateBalanceUI();
+            errorEl.innerText = 'Transfer failed. Try again.';
+            return;
+        }
+
+        const recipient = allUsersCache.find(u => u.uid === sendSelectedUid);
+        errorEl.style.color = 'var(--gold)';
+        errorEl.innerText = `Sent ${amount.toLocaleString()} kee to ${recipient ? recipient.name : 'user'}!`;
+        document.getElementById('sendAmountInput').value = '';
+    };
+
+    // ==========================================
     // 샵 (곡괭이 업그레이드 + 계정 탈퇴)
     // ==========================================
     function renderShop() {
@@ -1111,6 +1204,8 @@
         UI.balanceDisplay.innerText = `${balance.toLocaleString()}`;
     }
 
+    let allUsersCache = [];
+
     function startLeaderboardSync() {
         db.ref('users').on('value', (snapshot) => {
             const data = snapshot.val();
@@ -1118,6 +1213,7 @@
             const userArray = Object.keys(data).map(uid => ({
                 uid, name: data[uid].username, balance: data[uid].balance
             })).sort((a, b) => b.balance - a.balance);
+            allUsersCache = userArray;
 
             UI.rankList.innerHTML = '';
             userArray.forEach((user, index) => {
@@ -1128,6 +1224,8 @@
                 li.innerHTML = `<span class="rank-name">${rankIcon} ${user.name}</span><span class="rank-money">${user.balance.toLocaleString()} kee</span>`;
                 UI.rankList.appendChild(li);
             });
+
+            if (!document.getElementById('sendModal').classList.contains('hidden')) renderSendUserList();
         }, (error) => {
             console.error('Leaderboard sync error:', error);
             UI.rankList.innerHTML = '<li style="text-align:center; color:var(--pink); margin-top:20px; font-family:VT323,monospace;">Leaderboard unavailable (check DB rules)</li>';
