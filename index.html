@@ -18,6 +18,8 @@
         --text-color: #CDD6F4;
         --text-muted: #9399B2;
         --ink: #11121c;
+        --stock-up: #ff4d4d;
+        --stock-down: #4d8dff;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -224,14 +226,23 @@
     .market-ticker { font-size:0.7rem; color:var(--text-muted); font-family:'Press Start 2P', monospace; }
     .market-price { font-size:1.2rem; color:var(--gold); margin-top:4px; }
     .market-change { font-size:0.8rem; margin-left:6px; font-family:'VT323', monospace; }
-    .market-change.up { color:#8fd48f; }
-    .market-change.down { color:var(--pink); }
+    .market-change.up { color:var(--stock-up); }
+    .market-change.down { color:var(--stock-down); }
     .market-holding { font-size:0.9rem; color:var(--text-muted); margin-top:4px; }
     .market-actions { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
     .market-amount { width:90px; padding:8px; font-size:1rem; }
-    .market-chart-wrap { flex-shrink:0; }
+    .market-chart-wrap { flex-shrink:0; cursor:pointer; }
+    .market-chart-wrap:hover .market-chart { border-color: var(--gold); }
     .market-chart { width:120px; height:42px; background:var(--ink); border:2px solid #000; display:block; }
     @media (max-width:480px) { .market-chart { width:90px; height:36px; } }
+
+    /* ===== 캔들차트 팝업 ===== */
+    .chart-modal-content { max-width:640px; width:95%; }
+    .chart-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
+    .chart-price-now { font-size:1.1rem; }
+    .chart-canvas-wrap { position:relative; width:100%; border:3px solid #000; background:var(--ink); }
+    #chartCanvas { display:block; width:100%; touch-action:none; cursor:grab; }
+    #chartCanvas.dragging { cursor:grabbing; }
 
     /* ===== Stock Ticker (always-on top bar) ===== */
     .stock-ticker {
@@ -399,6 +410,19 @@
             <button class="btn-main pixel-btn" id="mineStrikeBtn" onclick="mineStrike()" style="flex:1;">STRIKE</button>
             <button class="btn-secondary pixel-btn" onclick="closeMineModal()" style="flex:1;">CLOSE</button>
         </div>
+    </div>
+</div>
+
+<div id="chartModal" class="modal-overlay hidden">
+    <div class="modal-content chart-modal-content">
+        <div class="chart-toolbar">
+            <h2 id="chartModalTitle" style="font-size:1rem;">AAPL</h2>
+            <span class="chart-price-now" id="chartPriceNow"></span>
+        </div>
+        <div class="chart-canvas-wrap">
+            <canvas id="chartCanvas" width="600" height="380"></canvas>
+        </div>
+        <button class="btn-secondary pixel-btn" onclick="closeChartModal()" style="width:100%; margin-top:12px;">CLOSE</button>
     </div>
 </div>
 
@@ -1868,28 +1892,223 @@
         return p.toFixed(4);
     }
 
-    // ===== 이전 흐름 막대 차트 (미니 바 차트) =====
+    const STOCK_UP_COLOR = '#ff4d4d';
+    const STOCK_DOWN_COLOR = '#4d8dff';
+
+    // epoch 하나를 하나의 캔들(시가/고가/저가/종가/거래량)로 변환
+    // 시가=직전 epoch 가격, 종가=해당 epoch 가격, 고가/저가는 시드 기반 난수로 몸통 위아래에 자연스러운 꼬리를 생성
+    function getCandle(asset, epoch) {
+        const open = priceAtEpoch(asset, epoch - 1);
+        const close = priceAtEpoch(asset, epoch);
+        const s = asset.seed;
+        const bodyRange = Math.abs(close - open) || (open * 0.002);
+        const wickUpRand = marketSeededRandom(s * 777 + epoch * 3 + 1);
+        const wickDownRand = marketSeededRandom(s * 777 + epoch * 3 + 2);
+        const volRand = marketSeededRandom(s * 777 + epoch * 3 + 3);
+        const high = Math.max(open, close) + wickUpRand * bodyRange * 0.9;
+        const low = Math.max(0.00001, Math.min(open, close) - wickDownRand * bodyRange * 0.9);
+        const volume = (0.3 + volRand * 0.7) * (1 + (bodyRange / open) * 25);
+        return { epoch, open, high, low, close, volume };
+    }
+
+    // ===== 미니 캔들 미리보기 (클릭하면 전체 캔들차트 팝업) =====
     const CHART_BAR_COUNT = 18;
     function renderMiniChart(asset, epoch) {
         const count = CHART_BAR_COUNT;
-        const prices = [];
-        for (let i = count - 1; i >= 0; i--) prices.push(priceAtEpoch(asset, epoch - i));
-        const min = Math.min(...prices);
-        const max = Math.max(...prices);
+        const candles = [];
+        for (let i = count - 1; i >= 0; i--) candles.push(getCandle(asset, epoch - i));
+        const allVals = candles.flatMap(c => [c.high, c.low]);
+        const min = Math.min(...allVals);
+        const max = Math.max(...allVals);
         const range = (max - min) || (max * 0.01) || 1;
-        const w = 120, h = 42, gap = 1.5;
-        const barW = (w / count) - gap;
-        let bars = '';
-        for (let i = 0; i < count; i++) {
-            const p = prices[i];
-            const prev = i > 0 ? prices[i - 1] : p;
-            const up = p >= prev;
-            const barH = Math.max(2, ((p - min) / range) * (h - 4));
-            const x = i * (w / count) + gap / 2;
-            const y = h - barH;
-            bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" fill="${up ? '#8fd48f' : '#F38BA8'}" />`;
+        const w = 120, h = 42;
+        const slot = w / count;
+        const bodyW = Math.max(1.5, slot * 0.55);
+        const scaleY = v => 2 + (h - 4) - ((v - min) / range) * (h - 4);
+        let shapes = '';
+        candles.forEach((c, i) => {
+            const x = i * slot + slot / 2;
+            const up = c.close >= c.open;
+            const color = up ? STOCK_UP_COLOR : STOCK_DOWN_COLOR;
+            const yHigh = scaleY(c.high), yLow = scaleY(c.low);
+            const yTop = scaleY(Math.max(c.open, c.close));
+            const yBot = scaleY(Math.min(c.open, c.close));
+            shapes += `<line x1="${x.toFixed(1)}" y1="${yHigh.toFixed(1)}" x2="${x.toFixed(1)}" y2="${yLow.toFixed(1)}" stroke="${color}" stroke-width="1"/>`;
+            shapes += `<rect x="${(x - bodyW / 2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bodyW.toFixed(1)}" height="${Math.max(1, yBot - yTop).toFixed(1)}" fill="${color}"/>`;
+        });
+        return `<svg class="market-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">${shapes}</svg>`;
+    }
+
+    // ===== 전체 캔들차트 팝업 (확대: 마우스 휠 / 이동: 좌클릭 드래그) =====
+    let chartAsset = null;
+    let chartViewCount = 60;
+    let chartOffset = 0;
+    let chartDragging = false;
+    let chartDragStartX = 0;
+    let chartDragStartOffset = 0;
+    let chartRefreshTimer = null;
+    let chartListenersAttached = false;
+
+    window.openChartModal = function(symbol) {
+        chartAsset = ALL_MARKET.find(a => a.symbol === symbol);
+        if (!chartAsset) return;
+        chartViewCount = 60;
+        chartOffset = 0;
+        document.getElementById('chartModalTitle').innerText = `${chartAsset.name} (${chartAsset.symbol})`;
+        document.getElementById('chartModal').classList.remove('hidden');
+        setupChartCanvas();
+        drawChart();
+        if (!chartRefreshTimer) {
+            chartRefreshTimer = setInterval(() => {
+                if (!document.getElementById('chartModal').classList.contains('hidden')) drawChart();
+            }, 15000);
         }
-        return `<svg class="market-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">${bars}</svg>`;
+    };
+
+    window.closeChartModal = function() {
+        document.getElementById('chartModal').classList.add('hidden');
+    };
+
+    function setupChartCanvas() {
+        const canvas = document.getElementById('chartCanvas');
+        const wrap = canvas.parentElement;
+        const cssWidth = wrap.clientWidth;
+        const cssHeight = Math.max(260, Math.round(cssWidth * 0.62));
+        const dpr = window.devicePixelRatio || 1;
+        canvas.style.height = cssHeight + 'px';
+        canvas.width = Math.round(cssWidth * dpr);
+        canvas.height = Math.round(cssHeight * dpr);
+        canvas._dpr = dpr;
+        canvas._cssWidth = cssWidth;
+        canvas._cssHeight = cssHeight;
+
+        if (chartListenersAttached) return;
+        chartListenersAttached = true;
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            chartDragging = true;
+            chartDragStartX = e.clientX;
+            chartDragStartOffset = chartOffset;
+            canvas.classList.add('dragging');
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!chartDragging || !chartAsset) return;
+            const c = document.getElementById('chartCanvas');
+            const candleSlot = c._cssWidth / chartViewCount;
+            const deltaX = e.clientX - chartDragStartX;
+            const deltaCandles = Math.round(deltaX / candleSlot);
+            chartOffset = Math.max(0, chartDragStartOffset + deltaCandles);
+            drawChart();
+        });
+        window.addEventListener('mouseup', () => {
+            if (chartDragging) {
+                chartDragging = false;
+                document.getElementById('chartCanvas').classList.remove('dragging');
+            }
+        });
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const dir = e.deltaY > 0 ? 1 : -1;
+            chartViewCount = Math.min(200, Math.max(20, chartViewCount + dir * 6));
+            drawChart();
+        }, { passive: false });
+    }
+
+    function drawChart() {
+        if (!chartAsset) return;
+        const canvas = document.getElementById('chartCanvas');
+        const ctx = canvas.getContext('2d');
+        const dpr = canvas._dpr || 1;
+        const w = canvas._cssWidth;
+        const h = canvas._cssHeight;
+        ctx.save();
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+
+        const nowEpoch = currentMarketEpoch();
+        const rightEpoch = nowEpoch - chartOffset;
+        const leftEpoch = rightEpoch - chartViewCount + 1;
+        const candles = [];
+        for (let e = leftEpoch; e <= rightEpoch; e++) candles.push(getCandle(chartAsset, e));
+
+        const volumeAreaH = h * 0.2;
+        const priceAreaH = h - volumeAreaH - 8;
+        const allVals = candles.flatMap(c => [c.high, c.low]);
+        let min = Math.min(...allVals), max = Math.max(...allVals);
+        const pad = (max - min) * 0.08 || max * 0.01 || 1;
+        min -= pad; max += pad;
+        const range = max - min;
+
+        const slot = w / candles.length;
+        const bodyW = Math.max(1, slot * 0.6);
+        const scaleY = v => 4 + priceAreaH - ((v - min) / range) * priceAreaH;
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 4; i++) {
+            const y = 4 + (priceAreaH / 4) * i;
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+
+        function drawMA(period, color) {
+            ctx.strokeStyle = color; ctx.lineWidth = 1.3; ctx.beginPath();
+            let started = false;
+            candles.forEach((c, i) => {
+                if (i < period - 1) return;
+                let sum = 0;
+                for (let k = 0; k < period; k++) sum += candles[i - k].close;
+                const avg = sum / period;
+                const x = i * slot + slot / 2;
+                const y = scaleY(avg);
+                if (!started) { ctx.moveTo(x, y); started = true; } else { ctx.lineTo(x, y); }
+            });
+            ctx.stroke();
+        }
+        drawMA(5, '#f5a442');
+        drawMA(20, '#b18cf5');
+
+        candles.forEach((c, i) => {
+            const x = i * slot + slot / 2;
+            const up = c.close >= c.open;
+            const color = up ? STOCK_UP_COLOR : STOCK_DOWN_COLOR;
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x, scaleY(c.high));
+            ctx.lineTo(x, scaleY(c.low));
+            ctx.stroke();
+            const yTop = scaleY(Math.max(c.open, c.close));
+            const yBot = scaleY(Math.min(c.open, c.close));
+            ctx.fillStyle = color;
+            ctx.fillRect(x - bodyW / 2, yTop, bodyW, Math.max(1, yBot - yTop));
+        });
+
+        const lastClose = candles[candles.length - 1].close;
+        const lastY = scaleY(lastClose);
+        ctx.strokeStyle = 'rgba(249,226,175,0.6)';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(0, lastY); ctx.lineTo(w, lastY); ctx.stroke();
+        ctx.setLineDash([]);
+
+        const volMax = Math.max(...candles.map(c => c.volume)) || 1;
+        const volTop = h - volumeAreaH;
+        candles.forEach((c, i) => {
+            const x = i * slot + slot / 2;
+            const up = c.close >= c.open;
+            const vh = (c.volume / volMax) * (volumeAreaH - 4);
+            ctx.fillStyle = up ? 'rgba(255,77,77,0.55)' : 'rgba(77,141,255,0.55)';
+            ctx.fillRect(x - bodyW / 2, h - vh, bodyW, vh);
+        });
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.beginPath(); ctx.moveTo(0, volTop); ctx.lineTo(w, volTop); ctx.stroke();
+
+        ctx.restore();
+
+        const priceNowEl = document.getElementById('chartPriceNow');
+        const prevClose = candles.length > 1 ? candles[candles.length - 2].close : lastClose;
+        const up = lastClose >= prevClose;
+        priceNowEl.innerText = `$${formatPrice(lastClose)}`;
+        priceNowEl.style.color = up ? STOCK_UP_COLOR : STOCK_DOWN_COLOR;
     }
 
     function initMarketView() {
@@ -1933,7 +2152,7 @@
                     <div class="market-price">$${formatPrice(price)}<span class="market-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</span></div>
                     <div class="market-holding">${holdingLine}</div>
                 </div>
-                <div class="market-chart-wrap">${renderMiniChart(a, epoch)}</div>
+                <div class="market-chart-wrap" onclick="openChartModal('${a.symbol}')">${renderMiniChart(a, epoch)}</div>
                 <div class="market-actions">
                     <input type="number" class="pixel-input market-amount" id="amt-${a.symbol}" placeholder="kee" min="1">
                     <button class="btn-main pixel-btn" onclick="marketBuy('${a.symbol}')">BUY</button>
