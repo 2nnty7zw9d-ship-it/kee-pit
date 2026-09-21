@@ -1,920 +1,218 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KEE-PIT ARCADE</title>
+<title>Wall Street in Fantasy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Cinzel:wght@600;700&family=Baloo+2:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Spectral:wght@400;500;600&family=Spectral+SC:wght@600&display=swap" rel="stylesheet">
 <style>
     :root {
-        --bg-color: #181825;
-        --panel-color: #232534;
-        --panel-light: #2f3146;
-        --pink: #F38BA8;
-        --blue: #89B4FA;
-        --gold: #F9E2AF;
-        --text-color: #CDD6F4;
-        --text-muted: #9399B2;
-        --ink: #11121c;
-        --stock-up: #ff4d4d;
-        --stock-down: #4d8dff;
+        --bg: #12101c;
+        --panel: #1c1930;
+        --panel-light: #262140;
+        --gold: #c9a227;
+        --gold-bright: #e6c454;
+        --cream: #efe6cf;
+        --muted: #8b84a8;
+        --up: #3f8f63;
+        --down: #a8402f;
+        --line: #3a3455;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing:border-box; margin:0; padding:0; }
     body {
-        background-color: var(--bg-color);
-        background-image:
-            linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-        background-size: 24px 24px;
-        color: var(--text-color);
-        min-height: 100vh;
-        display: flex; justify-content: center; align-items: flex-start;
-        padding: 46px 20px 20px;
-        font-family: 'VT323', monospace;
-        font-size: 1.15rem;
-        image-rendering: pixelated;
+        background: radial-gradient(ellipse at top, #191530 0%, var(--bg) 60%);
+        color: var(--cream);
+        font-family: 'Spectral', serif;
+        min-height:100vh;
+        padding: 22px;
+        display:flex; justify-content:center;
     }
-    h1, h2, h3, .pixel-font, button, .tab-btn, .lobby-card .name, .rank-money, .balance-amount, .bj-result, .slot-result { font-family: 'Press Start 2P', monospace; }
+    h1,h2,h3,.display { font-family:'Cinzel', serif; letter-spacing:0.5px; }
+    .num { font-family:'Spectral', serif; font-variant-numeric: tabular-nums; }
 
-    /* ===== 공용 픽셀 프레임 ===== */
-    .pixel-panel { background: var(--panel-color); border: 4px solid #000; box-shadow: 6px 6px 0 0 #000; }
-    .pixel-btn {
-        border: 4px solid #000; box-shadow: 4px 4px 0 0 #000;
-        transition: transform .05s ease, box-shadow .05s ease;
-        cursor: pointer; image-rendering: pixelated;
-    }
-    .pixel-btn:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0 0 0 0 #000; }
-    .pixel-btn:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(40%); }
-    .pixel-input {
-        border: 4px solid #000; background: var(--ink); color: var(--text-color);
-        font-family: 'VT323', monospace; font-size: 1.3rem; outline: none;
-    }
-    .pixel-input:focus { border-color: var(--blue); }
+    .hidden { display:none !important; }
 
-    .hidden { display: none !important; }
+    /* ===== Auth ===== */
+    .modal-overlay { position:fixed; inset:0; background:rgba(8,6,16,0.92); display:flex; align-items:center; justify-content:center; z-index:1000; padding:16px; }
+    .modal-card { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:36px 30px; width:100%; max-width:380px; box-shadow:0 20px 60px rgba(0,0,0,0.6); }
+    .modal-card h1 { font-size:1.5rem; color:var(--gold-bright); text-align:center; margin-bottom:6px; }
+    .modal-sub { text-align:center; color:var(--muted); font-size:0.9rem; margin-bottom:24px; line-height:1.5; }
+    .tabs { display:flex; border:1px solid var(--line); border-radius:3px; overflow:hidden; margin-bottom:20px; }
+    .tab-btn { flex:1; padding:10px; background:transparent; color:var(--muted); border:none; cursor:pointer; font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:1px; }
+    .tab-btn.active { background:var(--gold); color:#1a1508; }
+    input.field { width:100%; padding:12px 14px; margin-bottom:12px; background:#0e0c18; border:1px solid var(--line); border-radius:3px; color:var(--cream); font-family:'Spectral',serif; font-size:1rem; outline:none; }
+    input.field:focus { border-color:var(--gold); }
+    .error-msg { color:var(--down); font-size:0.85rem; min-height:18px; margin-bottom:8px; }
+    .btn { display:block; width:100%; padding:13px; background:var(--gold); color:#1a1508; border:none; border-radius:3px; font-family:'Cinzel',serif; font-size:0.8rem; letter-spacing:1px; cursor:pointer; text-align:center; }
+    .btn:hover:not(:disabled) { background:var(--gold-bright); }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .btn-ghost { background:transparent; border:1px solid var(--line); color:var(--cream); }
+    .btn-ghost:hover:not(:disabled) { border-color:var(--gold); color:var(--gold-bright); }
+    .btn-sm { padding:8px 12px; font-size:0.7rem; }
+    .btn-row { display:flex; gap:8px; }
+    .btn-row .btn { flex:1; }
 
-    /* ===== 로그인/회원가입 모달 ===== */
-    .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background-color: rgba(8,8,14,0.92); display:flex; justify-content:center; align-items:center; z-index:1000; padding:16px; }
-    .modal-content { background-color: var(--panel-color); padding:32px 24px; width:90%; max-width:400px; text-align:center; border:4px solid #000; box-shadow:8px 8px 0 0 #000; }
-    .modal-content h2 { font-size:1.4rem; color: var(--gold); margin-bottom:14px; letter-spacing:1px; text-shadow:3px 3px 0 var(--pink); }
-    .modal-sub { color: var(--text-muted); font-size:1rem; margin-bottom:22px; line-height:1.5; }
-    .tabs { display:flex; margin-bottom:20px; border:4px solid #000; }
-    .tab-btn { flex:1; padding:12px 4px; background:var(--ink); color:var(--text-muted); border:none; cursor:pointer; font-size:0.65rem; }
-    .tab-btn.active { background:var(--pink); color:#000; }
-    .modal-content input.pixel-input { width:100%; padding:14px; margin-bottom:14px; text-align:center; }
-    .error-msg { color: var(--pink); font-size:0.95rem; min-height:20px; margin-bottom:10px; }
+    /* ===== Layout ===== */
+    .app { width:100%; max-width:1180px; display:flex; flex-direction:column; gap:18px; }
 
-    /* ===== 송금 (Send) ===== */
-    .send-user-list { max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
-    .send-user-row { display:flex; justify-content:space-between; align-items:center; background:var(--ink); border:2px solid #000; padding:9px 10px; cursor:pointer; font-size:1rem; }
-    .send-user-row.selected { border-color:var(--gold); background: rgba(249,226,175,0.15); }
-    .send-user-row .send-user-balance { color:var(--text-muted); font-size:0.8rem; }
+    .header { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:18px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
+    .brand { font-size:1.15rem; color:var(--gold-bright); }
+    .brand small { display:block; font-family:'Spectral',serif; color:var(--muted); font-size:0.7rem; letter-spacing:2px; margin-top:2px; }
+    .identity { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .title-badge { font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:1px; padding:4px 9px; border:1px solid var(--gold); border-radius:2px; color:var(--gold-bright); }
+    .stat-group { display:flex; gap:26px; flex-wrap:wrap; }
+    .stat { text-align:right; }
+    .stat .label { font-size:0.65rem; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; }
+    .stat .value { font-size:1.15rem; color:var(--gold-bright); }
+    .stat .value.small { font-size:0.95rem; color:var(--cream); }
 
-    /* ===== 상단 아케이드 전광판 ===== */
-    .container { display:flex; flex-direction:column; gap:20px; width:100%; max-width:900px; }
-    .header {
-        background-color: var(--panel-color); padding:18px 20px; border:4px solid #000; box-shadow:6px 6px 0 0 #000;
-        display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;
-        position:relative; overflow:hidden;
-    }
-    .header::before {
-        content:"● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ●";
-        position:absolute; top:4px; left:8px; right:8px; letter-spacing:10px; font-size:6px;
-        color: var(--gold); opacity:0.55; white-space:nowrap; overflow:hidden;
-    }
-    .brand { font-size:1.1rem; color:var(--blue); text-shadow:2px 2px 0 var(--pink); letter-spacing:1px; margin-top:6px; }
-    .balance-box { display:flex; flex-direction:column; gap:6px; margin-top:6px; }
-    .balance-title { font-size:0.7rem; color: var(--text-muted); letter-spacing:1px; }
-    .balance-amount { font-size:1.1rem; color: var(--ink); background: var(--gold); border:3px solid #000; padding:6px 10px; display:inline-block; box-shadow:3px 3px 0 0 #000; }
-    .user-panel { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:6px; }
-    .user-name { font-family:'Press Start 2P', monospace; font-size:0.65rem; color: var(--gold); background:var(--ink); border:3px solid #000; padding:8px 10px; }
-    .btn-logout { background:var(--panel-light); border:3px solid #000; color:var(--text-color); padding:8px 10px; cursor:pointer; font-size:0.6rem; font-family:'Press Start 2P', monospace; box-shadow:3px 3px 0 0 #000; }
-    .btn-logout:active { transform:translate(3px,3px); box-shadow:0 0 0 0 #000; }
+    /* ===== News ===== */
+    .news-banner { background:linear-gradient(135deg, #221c3d, #171429); border:1px solid var(--gold); border-radius:4px; padding:20px 24px; position:relative; overflow:hidden; }
+    .news-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
+    .news-stage { font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:2px; padding:5px 12px; border-radius:2px; }
+    .news-stage.s1 { background:rgba(201,162,39,0.15); color:var(--gold-bright); border:1px solid var(--gold); }
+    .news-stage.s2 { background:rgba(168,64,47,0.18); color:#e08a76; border:1px solid var(--down); }
+    .news-stage.s3 { background:rgba(63,143,99,0.2); color:#8fd4ab; border:1px solid var(--up); }
+    .news-timer { color:var(--muted); font-size:0.85rem; }
+    .news-headline { font-size:1.15rem; line-height:1.5; color:var(--cream); }
+    .news-headline .stock-tag { color:var(--gold-bright); }
+    .news-bar { height:3px; background:var(--line); border-radius:2px; margin-top:14px; overflow:hidden; }
+    .news-bar-fill { height:100%; background:var(--gold); transition:width 0.9s linear; }
 
-    /* ===== 레이아웃 ===== */
-    .main-layout { display:flex; gap:20px; flex-direction:column; }
-    @media (min-width:768px) { .main-layout { flex-direction:row; } }
+    /* ===== Main grid ===== */
+    .main-grid { display:grid; grid-template-columns: 1fr; gap:18px; }
+    @media (min-width:960px) { .main-grid { grid-template-columns: 1.5fr 1fr; align-items:start; } }
 
-    .leaderboard { background-color: var(--panel-color); padding:18px; border:4px solid #000; box-shadow:6px 6px 0 0 #000; flex:1; min-width:200px; display:flex; flex-direction:column; }
-    .leaderboard h3 { color: var(--blue); margin-bottom:14px; font-size:0.8rem; text-align:center; letter-spacing:1px; }
-    .rank-list { list-style:none; display:flex; flex-direction:column; gap:8px; overflow-y:auto; max-height:400px; }
-    .rank-item { display:flex; justify-content:space-between; align-items:center; background:var(--ink); padding:10px; border:2px solid #000; font-size:1rem; }
-    .rank-item.me { border-color: var(--gold); box-shadow:2px 2px 0 0 var(--gold); }
-    .rank-name { color: var(--text-color); font-family:'VT323', monospace; font-size:1.05rem; }
-    .rank-money { color: var(--gold); font-size:0.6rem; }
+    .stocks-grid { display:grid; grid-template-columns:1fr; gap:14px; }
+    @media (min-width:640px) { .stocks-grid { grid-template-columns:1fr 1fr; } }
 
-    .game-area { display:flex; flex-direction:column; gap:20px; flex:2.5; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:20px; }
+    .panel h2 { font-size:0.95rem; color:var(--gold-bright); margin-bottom:4px; }
+    .panel .panel-sub { color:var(--muted); font-size:0.78rem; margin-bottom:16px; line-height:1.5; }
 
-    /* ===== 로비 ===== */
-    .lobby-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:18px; }
-    .lobby-card { background-color: var(--panel-color); border:4px solid #000; box-shadow:6px 6px 0 0 #000; padding:26px 14px; text-align:center; cursor:pointer; transition:transform .05s, box-shadow .05s; }
-    .lobby-card:active { transform:translate(4px,4px); box-shadow:2px 2px 0 0 #000; }
-    .lobby-card .icon { font-size:2.4rem; margin-bottom:12px; filter:drop-shadow(3px 3px 0 #000); }
-    .lobby-card .name { font-size:0.85rem; color: var(--pink); margin-bottom:8px; }
-    .lobby-card .desc { font-size:1rem; color: var(--text-muted); }
+    .stock-card { background:var(--panel-light); border:1px solid var(--line); border-radius:4px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+    .stock-card .row1 { display:flex; justify-content:space-between; align-items:flex-start; }
+    .stock-card .name { font-family:'Cinzel',serif; font-size:0.85rem; color:var(--cream); }
+    .stock-card .ticker { color:var(--muted); font-size:0.7rem; letter-spacing:1px; }
+    .stock-card .price { font-size:1.3rem; text-align:right; }
+    .stock-card .change { font-size:0.8rem; text-align:right; }
+    .stock-card .change.up { color:var(--up); }
+    .stock-card .change.down { color:var(--down); }
+    .sparkline { width:100%; height:44px; display:block; }
+    .stock-card .holding { font-size:0.78rem; color:var(--muted); }
+    .stock-card .trade-row { display:flex; gap:6px; align-items:center; }
+    .stock-card input.qty { width:70px; padding:8px; background:#0e0c18; border:1px solid var(--line); border-radius:3px; color:var(--cream); font-family:'Spectral',serif; }
+    .stock-card .trade-row .btn { flex:1; padding:8px 6px; font-size:0.68rem; }
 
-    .back-btn { background: var(--panel-light); border:3px solid #000; color: var(--text-color); padding:10px 14px; cursor:pointer; font-size:0.6rem; font-family:'Press Start 2P', monospace; align-self:flex-start; box-shadow:3px 3px 0 0 #000; }
-    .back-btn:active { transform:translate(3px,3px); box-shadow:0 0 0 0 #000; }
+    .side-stack { display:flex; flex-direction:column; gap:18px; }
 
-    .controls { background-color: var(--panel-color); padding:18px; border:4px solid #000; box-shadow:6px 6px 0 0 #000; display:flex; gap:16px; flex-wrap:wrap; }
-    .input-group { display:flex; flex-direction:column; gap:8px; flex:1; min-width:130px; }
-    .input-group label { font-size:0.6rem; color: var(--text-muted); font-family:'Press Start 2P', monospace; letter-spacing:0.5px; }
-    .input-group input, .input-group select.pixel-input { padding:12px; }
+    .ledger-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:0.88rem; }
+    .ledger-row:last-child { border-bottom:none; }
+    .ledger-row .k { color:var(--muted); }
+    .ledger-row .v { color:var(--cream); }
+    .locked-badge { display:inline-block; margin-top:10px; padding:6px 10px; background:rgba(168,64,47,0.2); border:1px solid var(--down); color:#e08a76; font-size:0.75rem; border-radius:3px; }
 
-    .btn-main {
-        background-color: var(--gold); color: var(--ink); padding:14px; font-size:0.7rem;
-        flex:1; min-width:120px; margin-top:auto; letter-spacing:0.5px;
-    }
-    .btn-secondary {
-        background-color: var(--panel-light); color: var(--text-color); padding:14px; font-size:0.7rem;
-        flex:1; min-width:100px; margin-top:auto;
-    }
+    .estate-item { border-bottom:1px solid var(--line); padding:12px 0; }
+    .estate-item:last-child { border-bottom:none; }
+    .estate-item .top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .estate-item .name { font-family:'Cinzel',serif; font-size:0.82rem; }
+    .estate-item .desc { color:var(--muted); font-size:0.76rem; margin-top:4px; line-height:1.5; }
+    .estate-item .price { color:var(--gold-bright); font-size:0.8rem; white-space:nowrap; }
 
-    .board-container { background-color: var(--panel-color); padding:20px; border:4px solid #000; box-shadow:6px 6px 0 0 #000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-
-    /* ===== 마인즈 ===== */
-    .grid { display:grid; grid-template-columns:repeat(5, 1fr); grid-template-rows:repeat(5, 1fr); gap:8px; width:100%; max-width:340px; aspect-ratio:1; }
-    .tile {
-        background-color: var(--panel-light);
-        border-top:4px solid #4a4d6b; border-left:4px solid #4a4d6b;
-        border-bottom:4px solid #000; border-right:4px solid #000;
-        display:flex; justify-content:center; align-items:center; font-size:1.4rem;
-        cursor:pointer; user-select:none;
-        aspect-ratio:1; overflow:hidden; min-width:0; min-height:0;
-    }
-    .tile:hover:not(.revealed) { background-color: #3a3c56; }
-    .tile.revealed { cursor:default; border:4px solid #000; background: var(--ink); box-shadow: inset 3px 3px 0 rgba(0,0,0,0.6); }
-    .tile.gem { background-color: rgba(137,180,250,0.25); border-color:#000; box-shadow: inset 0 0 0 2px var(--blue); }
-    .tile.mine { background-color: rgba(243,139,168,0.3); border-color:#000; box-shadow: inset 0 0 0 2px var(--pink); }
-
-    .status-box { margin-bottom:15px; text-align:center; min-height:56px; display:flex; flex-direction:column; justify-content:center; gap:6px; }
-    .multiplier { font-size:1.3rem; color: var(--gold); font-family:'Press Start 2P', monospace; }
-    .next-multiplier { font-size:1rem; color: var(--text-muted); }
-    .message { font-family:'Press Start 2P', monospace; font-size:0.75rem; }
-    .message.win { color: var(--gold); }
-    .message.lose { color: var(--pink); }
-
-    #actionBtn { background: var(--gold); box-shadow:6px 6px 0 0 #000; }
-
-    /* ===== 블랙잭 ===== */
-    .bj-table { width:100%; display:flex; flex-direction:column; gap:20px; align-items:center; }
-    .bj-hand-label { font-size:0.65rem; font-family:'Press Start 2P', monospace; color: var(--text-muted); margin-bottom:10px; text-align:center; letter-spacing:1px; }
-    .bj-hand-value { color: var(--blue); }
-    .bj-cards { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; min-height:88px; }
-    .playing-card {
-        width:56px; height:80px; background:#f2f2f2; border:3px solid #000; border-radius:0;
-        display:flex; flex-direction:column; align-items:center; justify-content:center;
-        font-family:'VT323', monospace; font-weight:bold; font-size:1.6rem; box-shadow:3px 3px 0 0 #000;
-    }
-    .playing-card.red { color: var(--pink); }
-    .playing-card.black { color: var(--ink); }
-    .playing-card.back { background: repeating-linear-gradient(45deg, var(--blue) 0 6px, var(--panel-color) 6px 12px); }
-    @keyframes cardDealIn {
-        0% { opacity:0; transform: translate(-70px,-40px) rotate(-18deg) scale(.7); }
-        70% { opacity:1; }
-        100% { opacity:1; transform: translate(0,0) rotate(0) scale(1); }
-    }
-    .playing-card.deal-in { animation: cardDealIn .35s cubic-bezier(.2,.8,.3,1) both; }
-    .bj-result { text-align:center; font-size:0.85rem; min-height:32px; letter-spacing:0.5px; }
-    .bj-actions { display:flex; gap:10px; width:100%; }
-
-    /* ===== 슬롯머신 ===== */
-    .slot-machine {
-        background: var(--ink);
-        border: 6px solid var(--gold);
-        outline: 4px solid #000;
-        padding:20px; position:relative;
-    }
-    .slot-grid { display:grid; grid-template-columns:repeat(5, 1fr); grid-template-rows:repeat(3, 1fr); gap:6px; width:100%; max-width:380px; margin-bottom:18px; }
-    .slot-cell { background-color: var(--panel-color); border:3px solid #000; display:flex; justify-content:center; align-items:center; font-size:1.7rem; aspect-ratio:1; }
-    .slot-cell.payline { border-color: var(--gold); background-color: rgba(249,226,175,0.18); box-shadow: inset 0 0 0 2px var(--gold); }
-    .slot-cell.spinning { animation: slotFlicker .09s linear infinite; }
-    @keyframes slotFlicker { 0%,100% { opacity:1; transform:translateY(0); } 50% { opacity:.5; transform:translateY(-4px); } }
-    .slot-cell.stopped { animation: slotStop .22s ease-out; }
-    @keyframes slotStop { 0% { transform:scale(1.25); } 100% { transform:scale(1); } }
-    .slot-result { text-align:center; font-size:0.8rem; min-height:32px; margin-top:8px; letter-spacing:0.5px; }
-    .paytable { font-size:0.9rem; color: var(--text-muted); margin-top:14px; text-align:center; line-height:1.7; }
-
-    #slotSpinBtn { background: var(--pink); color:#000; }
-
-    /* ===== 경마 ===== */
-    .horse-select { display:flex; gap:6px; width:100%; max-width:420px; margin-bottom:16px; flex-wrap:wrap; }
-    .horse-pick { flex:1; min-width:60px; text-align:center; padding:10px 4px; background:var(--panel-light); border:3px solid #000; cursor:pointer; font-size:0.6rem; line-height:1.6; box-shadow:3px 3px 0 0 #000; }
-    .horse-pick.active { background:var(--gold); color:var(--ink); }
-    .horse-track { display:flex; flex-direction:column; gap:10px; width:100%; max-width:420px; }
-    .horse-lane { position:relative; height:38px; background: var(--panel-light); border:3px solid #000; overflow:hidden; }
-    .horse-lane .flag { position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:1.1rem; z-index:1; }
-    .horse-emoji { position:absolute; left:0; top:50%; transform:translateY(-50%); font-size:1.5rem; }
-    .horse-emoji.running { animation: horseBob .22s ease-in-out infinite alternate; }
-    @keyframes horseBob { 0%{ transform:translateY(-50%) scaleX(1); } 100%{ transform:translateY(-58%) scaleX(1.06); } }
-
-    /* ===== 룰렛 ===== */
-    .roulette-viewport { position:relative; width:100%; max-width:300px; height:56px; overflow:hidden; border:4px solid #000; background:var(--ink); margin-bottom:16px; }
-    .roulette-strip { position:absolute; top:0; left:0; display:flex; height:100%; }
-    .roulette-cell { width:46px; height:100%; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-family:'Press Start 2P', monospace; font-size:0.7rem; color:#fff; border-right:2px solid #000; }
-    .roulette-cell.red { background:#c0392b; }
-    .roulette-cell.black { background:#1b1b1f; }
-    .roulette-cell.green { background:#1e824c; }
-    .roulette-pointer { position:absolute; left:50%; top:0; transform:translateX(-50%); font-size:0.9rem; color: var(--gold); z-index:2; line-height:1; }
-    .roulette-pointer.bottom { top:auto; bottom:0; }
-
-    /* ===== 광산 (Mine) ===== */
-    .mine-bar { position:relative; width:100%; height:50px; background:var(--ink); border:4px solid #000; margin:6px 0 16px; overflow:hidden; }
-    .mine-target { position:absolute; top:0; bottom:0; left:42%; width:16%; background: rgba(249,226,175,0.35); border-left:3px solid var(--gold); border-right:3px solid var(--gold); }
-    .mine-marker { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:1.7rem; }
-
-    /* ===== 마켓 (Stocks & Coins) ===== */
-    .market-list { display:flex; flex-direction:column; gap:12px; width:100%; }
-    .market-row { display:flex; justify-content:space-between; align-items:center; gap:10px; background:var(--panel-light); border:3px solid #000; padding:12px; flex-wrap:wrap; }
-    .market-name { font-size:1.1rem; color:var(--text-color); }
-    .market-ticker { font-size:0.7rem; color:var(--text-muted); font-family:'Press Start 2P', monospace; }
-    .market-price { font-size:1.2rem; color:var(--gold); margin-top:4px; }
-    .market-change { font-size:0.8rem; margin-left:6px; font-family:'VT323', monospace; }
-    .market-change.up { color:var(--stock-up); }
-    .market-change.down { color:var(--stock-down); }
-    .market-holding { font-size:0.9rem; color:var(--text-muted); margin-top:4px; }
-    .market-actions { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
-    .market-amount { width:90px; padding:8px; font-size:1rem; }
-    .market-chart-wrap { flex-shrink:0; cursor:pointer; }
-    .market-chart-wrap:hover .market-chart { border-color: var(--gold); }
-    .market-chart { width:120px; height:42px; background:var(--ink); border:2px solid #000; display:block; }
-    @media (max-width:480px) { .market-chart { width:90px; height:36px; } }
-
-    /* ===== 캔들차트 플로팅 윈도우 (드래그 이동/리사이즈/전체화면, 여러 개 동시에) ===== */
-    #chartWindowLayer { position:fixed; inset:0; pointer-events:none; z-index:900; }
-    .chart-window { position:fixed; pointer-events:auto; background:var(--panel-color); border:4px solid #000; box-shadow:6px 6px 0 0 #000; display:flex; flex-direction:column; min-width:260px; min-height:220px; }
-    .chart-window.fullscreen { left:0 !important; top:0 !important; width:100vw !important; height:100vh !important; }
-    .chart-window-titlebar { background:var(--panel-light); border-bottom:3px solid #000; padding:8px 10px; display:flex; justify-content:space-between; align-items:center; gap:8px; cursor:move; font-family:'Press Start 2P', monospace; font-size:0.6rem; color:var(--gold); user-select:none; flex-shrink:0; }
-    .chart-window-price { font-family:'VT323', monospace; font-size:1rem; color:var(--text-color); }
-    .chart-window-controls { display:flex; gap:6px; flex-shrink:0; }
-    .chart-win-btn { background:var(--ink); border:2px solid #000; color:var(--text-color); font-size:0.7rem; width:24px; height:24px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-family:'Press Start 2P', monospace; }
-    .chart-win-btn:hover { background:var(--pink); color:#000; }
-    .chart-window-body { flex:1; display:flex; flex-direction:column; padding:8px; gap:6px; overflow:hidden; min-height:0; }
-    .chart-window-canvas-wrap { position:relative; flex:1; min-height:0; width:100%; border:3px solid #000; background:var(--ink); }
-    .chart-window-canvas-wrap canvas { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
-    .chart-window-canvas-wrap canvas.dragging { cursor:grabbing; }
-    .chart-window-resize { position:absolute; right:0; bottom:0; width:16px; height:16px; cursor:nwse-resize; background:repeating-linear-gradient(135deg, #000 0 2px, transparent 2px 4px); }
-
-    /* ===== Stock Ticker (always-on top bar) ===== */
-    .stock-ticker {
-        position: fixed; top:0; left:0; right:0; height:30px; z-index:2000;
-        background: var(--ink); border-bottom:3px solid var(--gold);
-        display:flex; align-items:center; overflow:hidden; white-space:nowrap;
-    }
-    .stock-ticker-track {
-        display:inline-flex; gap:36px; padding-left:100%;
-        animation: tickerScroll 22s linear infinite;
-    }
-    .stock-ticker-item {
-        font-family:'Press Start 2P', monospace; font-size:0.55rem; color: var(--text-color);
-        display:inline-flex; align-items:center; gap:6px;
-    }
-    .stock-ticker-item .up { color: var(--stock-up); }
-    .stock-ticker-item .down { color: var(--stock-down); }
-    @keyframes tickerScroll {
-        from { transform: translateX(0); }
-        to { transform: translateX(-100%); }
-    }
-
-    /* ================================================
-       테마 (Shop에서 구매/장착 가능)
-       ================================================ */
-    .theme-swatch { display:flex; gap:4px; }
-    .theme-swatch span { width:16px; height:16px; border:2px solid #000; display:inline-block; }
-
-    /* 공통: 테마가 적용되면 기본 픽셀 프레임을 theme 쪽 룰이 덮어쓸 수 있도록 !important 사용 */
-
-    /* 1. Cyberpunk Neon */
-    body.theme-cyberpunk {
-        --bg-color:#050b14; --panel-color:#0a0f1a; --panel-light:#0f1624;
-        --pink:#F43F5E; --blue:#06B6D4; --gold:#facc15; --ink:#03050a;
-        --text-color:#06B6D4; --text-muted:#3b82f6;
-        font-family: 'Courier New', monospace;
-    }
-    body.theme-cyberpunk .header, body.theme-cyberpunk .lobby-card, body.theme-cyberpunk .modal-content {
-        background-color:rgba(5,11,20,0.72) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-        border:2px solid #7C3AED !important;
-        box-shadow:0 0 15px #7C3AED, inset 0 0 10px rgba(124,58,237,0.5) !important;
-        clip-path: polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
-    }
-    body.theme-cyberpunk .board-container, body.theme-cyberpunk .controls, body.theme-cyberpunk .leaderboard {
-        background-color:rgba(5,11,20,0.72) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-        border:2px solid #7C3AED !important;
-        box-shadow:0 0 15px #7C3AED, inset 0 0 10px rgba(124,58,237,0.5) !important;
-        clip-path: polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
-    }
-    body.theme-cyberpunk h1, body.theme-cyberpunk h2, body.theme-cyberpunk h3,
-    body.theme-cyberpunk .brand, body.theme-cyberpunk .lobby-card .name {
-        font-family:'Courier New', monospace !important;
-        color:#facc15 !important; text-shadow:0 0 5px #facc15; animation: cyberGlitch 3.5s infinite;
-    }
-    @keyframes cyberGlitch {
-        0%, 92%, 100% { transform: translate(0,0); }
-        93% { transform: translate(-2px,1px); }
-        95% { transform: translate(2px,-1px); }
-        97% { transform: translate(0,0); }
-    }
-    body.theme-cyberpunk .pixel-btn, body.theme-cyberpunk .btn-main, body.theme-cyberpunk .btn-secondary,
-    body.theme-cyberpunk .tab-btn, body.theme-cyberpunk .back-btn, body.theme-cyberpunk .btn-logout {
-        background:rgba(6,182,212,0.1) !important; border:1px solid #06B6D4 !important;
-        color:#06B6D4 !important; box-shadow:none !important; text-shadow:none;
-    }
-    body.theme-cyberpunk .pixel-btn:hover:not(:disabled) { background:rgba(6,182,212,0.3) !important; box-shadow:0 0 10px #06B6D4 !important; }
-    body.theme-cyberpunk .pixel-btn:active:not(:disabled) { transform:none !important; }
-
-    /* Cyberpunk: 마인즈(CYBER PSYCHO HUNT) - SVG 헥사곤 회로 그리드 + 스캔/글리치 연출 */
-    body.theme-cyberpunk .tile {
-        background-color:#0a0f1a !important; border-color:#1b2030 !important;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpolygon points='20,2 36,11 36,29 20,38 4,29 4,11' fill='none' stroke='%2306B6D4' stroke-opacity='0.35' stroke-width='1'/%3E%3Ccircle cx='20' cy='20' r='1.5' fill='%2306B6D4' fill-opacity='0.5'/%3E%3Cline x1='20' y1='2' x2='20' y2='11' stroke='%2306B6D4' stroke-opacity='0.25'/%3E%3Cline x1='20' y1='29' x2='20' y2='38' stroke='%2306B6D4' stroke-opacity='0.25'/%3E%3C/svg%3E") !important;
-        background-size: 40px 40px !important; background-position:center !important;
-    }
-    body.theme-cyberpunk .tile:hover:not(.revealed) { box-shadow: inset 0 0 0 2px #06B6D4 !important; }
-    body.theme-cyberpunk .tile.gem {
-        background-color: rgba(6,182,212,0.15) !important; box-shadow: inset 0 0 8px #06B6D4, inset 0 0 0 2px #06B6D4 !important;
-        animation: cyberScanReveal 0.5s ease-out;
-    }
-    @keyframes cyberScanReveal {
-        0% { box-shadow: inset 0 0 0 2px #06B6D4, 0 0 0 0 rgba(6,182,212,0.8); }
-        50% { box-shadow: inset 0 0 12px #06B6D4, 0 0 10px 2px rgba(6,182,212,0.6); }
-        100% { box-shadow: inset 0 0 8px #06B6D4, inset 0 0 0 2px #06B6D4; }
-    }
-    body.theme-cyberpunk .tile.mine {
-        background-color: rgba(244,63,94,0.25) !important; box-shadow: inset 0 0 10px #F43F5E, inset 0 0 0 2px #F43F5E !important;
-        animation: cyberMineGlitch 0.5s steps(1, end) 2;
-    }
-    @keyframes cyberMineGlitch {
-        0% { transform: translate(0,0); filter:none; }
-        20% { transform: translate(-3px,2px); filter:url(#cyberGlitchRGB); }
-        40% { transform: translate(3px,-2px); filter:none; }
-        60% { transform: translate(-2px,-1px); filter:url(#cyberGlitchRGB); }
-        80% { transform: translate(2px,1px); filter:none; }
-        100% { transform: translate(0,0); filter:none; }
-    }
-
-    /* Cyberpunk: 블랙잭(DATA HACK) - 반투명 홀로그램 카드 */
-    body.theme-cyberpunk .playing-card {
-        background: rgba(6,182,212,0.08) !important; backdrop-filter: blur(3px);
-        border:2px solid #06B6D4 !important; box-shadow:0 0 8px #06B6D4 !important;
-        color:#06B6D4 !important;
-    }
-    body.theme-cyberpunk .playing-card.red { color:#F43F5E !important; }
-    body.theme-cyberpunk .playing-card.black { color:#06B6D4 !important; }
-    body.theme-cyberpunk .playing-card.back {
-        background: repeating-linear-gradient(45deg, rgba(124,58,237,0.3) 0 4px, rgba(6,182,212,0.15) 4px 8px) !important;
-        border:2px solid #7C3AED !important;
-    }
-
-    /* Cyberpunk: 룰렛(NEON ROULETTE) - 형광 블루/블랙, 레이저 포인터 */
-    body.theme-cyberpunk .roulette-cell.red { background:#F43F5E !important; box-shadow:0 0 6px #F43F5E; }
-    body.theme-cyberpunk .roulette-cell.black { background:#050b14 !important; box-shadow:inset 0 0 0 1px #06B6D4; }
-    body.theme-cyberpunk .roulette-cell.green { background:#06B6D4 !important; color:#000 !important; box-shadow:0 0 8px #06B6D4; }
-    body.theme-cyberpunk .roulette-pointer {
-        color:#06B6D4 !important; text-shadow:0 0 6px #06B6D4, 0 0 12px #06B6D4;
-    }
-
-    /* Cyberpunk: 경마(SANDEVISTAN RACE) - 로봇 말 잔상(모션 블러) 효과 */
-    body.theme-cyberpunk .horse-emoji.running {
-        filter: drop-shadow(-10px 0 4px rgba(6,182,212,0.6)) drop-shadow(-20px 0 6px rgba(124,58,237,0.4));
-    }
-    body.theme-cyberpunk .market-chart {
-        filter: drop-shadow(0 0 3px #06B6D4) drop-shadow(0 0 1px #F43F5E);
-    }
-
-    /* 2. Medieval Tavern */
-    body.theme-medieval {
-        --bg-color:#2c1e16; --panel-color:#2c1e16; --panel-light:#3a2718;
-        --pink:#881337; --blue:#d97706; --gold:#fcd34d; --ink:#1a1109;
-        --text-color:#fcd34d; --text-muted:#c9a26a;
-        font-family: 'Cinzel', 'Times New Roman', serif;
-    }
-    body.theme-medieval .header, body.theme-medieval .lobby-card, body.theme-medieval .modal-content,
-    body.theme-medieval .board-container, body.theme-medieval .controls, body.theme-medieval .leaderboard {
-        background-color:#2c1e16 !important;
-        background-image: radial-gradient(circle at 50% 0%, #4a3020, #2c1e16) !important;
-        border:6px solid #854d0e !important; border-radius:40px 40px 8px 8px !important;
-        box-shadow:8px 8px 20px rgba(0,0,0,0.8), inset 0 0 0 3px #1a1109, inset 0 0 0 5px #a6702f !important;
-        position:relative !important; overflow:hidden !important;
-    }
-    body.theme-medieval .header::before, body.theme-medieval .lobby-card::before, body.theme-medieval .modal-content::before,
-    body.theme-medieval .board-container::before, body.theme-medieval .controls::before, body.theme-medieval .leaderboard::before {
-        content:''; position:absolute; inset:0; filter:url(#parchmentGrain); opacity:0.5; pointer-events:none; mix-blend-mode:overlay;
-    }
-    body.theme-medieval h1, body.theme-medieval h2, body.theme-medieval h3, body.theme-medieval .brand {
-        font-family:'Cinzel', 'Times New Roman', serif !important;
-        text-align:center; border-bottom:2px dashed #854d0e; padding-bottom:10px; display:block;
-    }
-    body.theme-medieval .pixel-btn, body.theme-medieval .btn-main, body.theme-medieval .btn-secondary,
-    body.theme-medieval .tab-btn, body.theme-medieval .back-btn, body.theme-medieval .btn-logout {
-        font-family:'Cinzel', 'Times New Roman', serif !important;
-        background:#78350f !important; border:2px solid #d97706 !important; color:#fef3c7 !important;
-        border-radius:5px !important;
-        box-shadow: inset 0 0 8px #000, 3px 3px 5px rgba(0,0,0,0.5) !important;
-    }
-    body.theme-medieval .pixel-btn:active:not(:disabled) { transform:none !important; }
-
-    /* 곰 사냥(마인즈): 안전 타일은 풀 베기 연출, 곰 발자국은 팝 연출 */
-    @keyframes grassCut {
-        0% { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); opacity:0; }
-        40% { opacity:1; }
-        100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); opacity:1; }
-    }
-    @keyframes bearPop {
-        0% { transform:scale(0.4) rotate(-14deg); opacity:0; }
-        60% { transform:scale(1.2) rotate(6deg); opacity:1; }
-        100% { transform:scale(1) rotate(0); opacity:1; }
-    }
-    body.theme-medieval .tile.gem { animation: grassCut 0.35s ease-out both; background-color: rgba(74,222,128,0.15) !important; }
-    body.theme-medieval .tile.mine { animation: bearPop 0.4s cubic-bezier(.3,1.5,.4,1) both; background-color: rgba(92,58,33,0.35) !important; }
-
-    /* 야바위(슬롯): 그릇이 셔플되듯 3D 뒤집기 */
-    @keyframes bowlShuffle {
-        0%, 100% { transform: rotateY(0deg) scale(1); }
-        50% { transform: rotateY(180deg) scale(0.92); }
-    }
-    body.theme-medieval .slot-grid { perspective: 500px; }
-    body.theme-medieval .slot-cell.spinning { animation: bowlShuffle 0.45s ease-in-out infinite; background:#57534e !important; }
-    body.theme-medieval .slot-cell { background-color:#3a2718 !important; border-color:#854d0e !important; }
-
-    /* 용기사 레이스: 날갯짓 + 은은한 발광 */
-    @keyframes dragonFlap {
-        0% { transform: translateY(-50%) rotate(0deg) scaleY(1); }
-        50% { transform: translateY(-58%) rotate(-4deg) scaleY(1.12); }
-        100% { transform: translateY(-50%) rotate(0deg) scaleY(1); }
-    }
-    body.theme-medieval .horse-emoji.running { animation: dragonFlap 0.35s ease-in-out infinite; filter: drop-shadow(0 0 6px #f59e0b); }
-    body.theme-medieval .horse-lane { background:#3a2718 !important; border-color:#854d0e !important; }
-
-    /* 항구 교역소: 잉크 얼룩풍 캔들/티커 색상 */
-    body.theme-medieval .market-row { background:#3a2718 !important; border-color:#854d0e !important; }
-
-    /* 3. Lo-Fi Study & Chill (neumorphism) */
-    body.theme-lofi {
-        --bg-color:#f3e9dc; --panel-color:#f3e9dc; --panel-light:#ecdfcd;
-        --pink:#7f5539; --blue:#9c6644; --gold:#7f5539; --ink:#f3e9dc;
-        --text-color:#7f5539; --text-muted:#9c6644;
-    }
-    body.theme-lofi .header, body.theme-lofi .lobby-card, body.theme-lofi .modal-content,
-    body.theme-lofi .board-container, body.theme-lofi .controls, body.theme-lofi .leaderboard {
-        background-color:#f3e9dc !important; border:none !important; border-radius:40px !important;
-        box-shadow:12px 12px 24px #c3baaf, -12px -12px 24px #ffffff !important;
-    }
-    body.theme-lofi h1, body.theme-lofi h2, body.theme-lofi h3, body.theme-lofi .brand {
-        color:#9c6644 !important; text-align:center;
-    }
-    body.theme-lofi .pixel-btn, body.theme-lofi .btn-main, body.theme-lofi .btn-secondary,
-    body.theme-lofi .tab-btn, body.theme-lofi .back-btn, body.theme-lofi .btn-logout, body.theme-lofi .pixel-input {
-        background:#e6ccb2 !important; border:none !important; color:#7f5539 !important;
-        border-radius:25px !important;
-        box-shadow:6px 6px 12px #d1bba2, -6px -6px 12px #fbeadd !important;
-    }
-    body.theme-lofi .pixel-btn:active:not(:disabled) {
-        box-shadow: inset 4px 4px 8px #d1bba2, inset -4px -4px 8px #fbeadd !important; transform:none !important;
-    }
-    body.theme-lofi .tile, body.theme-lofi .slot-cell, body.theme-lofi .playing-card { border-radius:14px !important; }
-
-    /* 4. Anime Arcade */
-    body.theme-anime {
-        --bg-color:#fff0f5; --panel-color:#fff0f5; --panel-light:#ffe4ef;
-        --pink:#f472b6; --blue:#d946ef; --gold:#facc15; --ink:#3b0764;
-        --text-color:#d946ef; --text-muted:#a855f7;
-        font-family:'Baloo 2', cursive; font-weight:700;
-    }
-    body.theme-anime .header, body.theme-anime .lobby-card, body.theme-anime .modal-content,
-    body.theme-anime .board-container, body.theme-anime .controls, body.theme-anime .leaderboard {
-        background-color:#fff0f5 !important; border:5px solid #f472b6 !important;
-        border-radius:30px 10px 30px 10px !important; box-shadow:8px 8px 0 #f472b6 !important;
-    }
-    body.theme-anime h1, body.theme-anime h2, body.theme-anime h3, body.theme-anime .brand {
-        font-family:'Baloo 2', cursive !important;
-        background:#f472b6 !important; color:#fff !important; padding:8px 14px;
-        border-radius:15px; display:inline-block;
-    }
-    body.theme-anime .pixel-btn, body.theme-anime .btn-main, body.theme-anime .btn-secondary,
-    body.theme-anime .tab-btn, body.theme-anime .back-btn, body.theme-anime .btn-logout {
-        font-family:'Baloo 2', cursive !important;
-        background:#f472b6 !important; border:3px solid #fff !important; color:#fff !important;
-        border-radius:20px !important; transform:rotate(-3deg); box-shadow:4px 4px 0 rgba(244,114,182,0.5) !important;
-    }
-    body.theme-anime .pixel-btn:active:not(:disabled) { transform:rotate(-3deg) translate(2px,2px) !important; }
-
-    /* 폭탄마 마법소녀(마인즈): 타일에 회전하는 마법진, 보석/폭탄 팝 연출 */
-    body.theme-anime .tile {
-        position:relative; overflow:hidden;
-        background: radial-gradient(circle, rgba(244,114,182,0.12) 0%, rgba(168,85,247,0.06) 60%, transparent 100%) !important;
-    }
-    body.theme-anime .tile::before {
-        content:''; position:absolute; inset:-20%;
-        background: repeating-conic-gradient(from 0deg, rgba(244,114,182,0.18) 0deg 8deg, transparent 8deg 24deg);
-        animation: animeCircleSpin 6s linear infinite; pointer-events:none;
-    }
-    @keyframes animeCircleSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @keyframes animeSparklePop {
-        0% { transform:scale(0.3) rotate(-20deg); opacity:0; }
-        55% { transform:scale(1.25) rotate(8deg); opacity:1; }
-        100% { transform:scale(1) rotate(0); opacity:1; }
-    }
-    @keyframes animeBoomPop {
-        0% { transform:scale(0.3) rotate(0); opacity:0; }
-        40% { transform:scale(1.3) rotate(-10deg); opacity:1; }
-        60% { transform:scale(0.9) rotate(8deg); }
-        100% { transform:scale(1) rotate(0); opacity:1; }
-    }
-    body.theme-anime .tile.gem { animation: animeSparklePop 0.4s cubic-bezier(.4,1.8,.5,1) both; background-color: rgba(250,204,21,0.15) !important; }
-    body.theme-anime .tile.mine { animation: animeBoomPop 0.4s cubic-bezier(.4,1.8,.5,1) both; background-color: rgba(59,7,100,0.25) !important; }
-
-    /* 마법진 TCG(블랙잭): 카드에 홀로그램 포일 스윕 */
-    body.theme-anime .playing-card {
-        border:2px solid #a855f7 !important; border-radius:10px !important;
-        background: linear-gradient(120deg, #fff 0%, #fbcfe8 40%, #fff 55%, #ddd6fe 70%, #fff 100%) !important;
-        background-size:250% 100%;
-        animation: animeFoilSweep 1.3s ease-out both;
-    }
-    @keyframes animeFoilSweep { 0% { background-position:100% 0; } 100% { background-position:0 0; } }
-    body.theme-anime .playing-card.back {
-        background: repeating-linear-gradient(45deg, #f472b6 0 6px, #a855f7 6px 12px) !important;
-        border:2px solid #fff !important;
-    }
-
-    /* 가챠 뽑기(슬롯): 캡슐이 통통 튀며 회전 */
-    @keyframes gachaCapsuleBounce {
-        0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
-        25% { transform: translateY(-6px) rotate(-12deg) scale(0.95); }
-        50% { transform: translateY(0) rotate(0deg) scale(1.05); }
-        75% { transform: translateY(-3px) rotate(10deg) scale(0.97); }
-    }
-    body.theme-anime .slot-cell { background-color:#fff0f5 !important; border:3px solid #f472b6 !important; border-radius:50% !important; }
-    body.theme-anime .slot-cell.spinning { animation: gachaCapsuleBounce 0.35s ease-in-out infinite; }
-
-    /* 지각생 달리기(경마): 통통 튀며 달림 */
-    @keyframes lateRunBounce {
-        0%, 100% { transform: translateY(-50%) scale(1,1); }
-        30% { transform: translateY(-62%) scale(0.9,1.1); }
-        60% { transform: translateY(-45%) scale(1.05,0.92); }
-    }
-    body.theme-anime .horse-emoji.running { animation: lateRunBounce 0.3s ease-in-out infinite; }
-    body.theme-anime .horse-lane { background:#fff0f5 !important; border-color:#f472b6 !important; }
-
-    /* 아이돌 팬덤(마켓): 인기도 등락에 따른 표정 아이콘 */
-    body.theme-anime .market-row { background:#fff0f5 !important; border-color:#f472b6 !important; border-radius:16px !important; }
-    body.theme-anime .market-change.up::after { content:' 🥳'; }
-    body.theme-anime .market-change.down::after { content:' 😭'; }
-
-    /* 5. K-Illegal Sportsbook Meme */
-    body.theme-k-illegal {
-        --bg-color:#000000; --panel-color:#000000; --panel-light:#111111;
-        --pink:#ff0000; --blue:#ffffff; --gold:#ffff00; --ink:#000000;
-        --text-color:#ffff00; --text-muted:#ffffff;
-        font-weight:900;
-    }
-    body.theme-k-illegal .header, body.theme-k-illegal .lobby-card, body.theme-k-illegal .modal-content,
-    body.theme-k-illegal .board-container, body.theme-k-illegal .controls, body.theme-k-illegal .leaderboard {
-        background:#000 !important; border:5px dashed #ff0000 !important; box-shadow:none !important;
-        animation:none !important; border-radius:0 !important;
-    }
-    body.theme-k-illegal .rank-item, body.theme-k-illegal .market-row {
-        background:#111 !important; border:1px solid #444 !important; color:#fff !important;
-    }
-    body.theme-k-illegal .pixel-btn, body.theme-k-illegal .btn-main, body.theme-k-illegal .btn-secondary,
-    body.theme-k-illegal .tab-btn, body.theme-k-illegal .back-btn, body.theme-k-illegal .btn-logout {
-        background:#111 !important; border:1px solid #444 !important; color:#fff !important; box-shadow:none !important;
-    }
-    @keyframes blink { 0%, 100% { opacity:1; } 50% { opacity:0; } }
-    .k-illegal-banner {
-        background:#ffff00 !important; color:#ff0000 !important; font-weight:900; text-align:center;
-        padding:6px 8px; border:none !important; margin-bottom:14px; animation:blink 0.8s infinite;
-        font-size:0.9rem;
-    }
-
-    /* 6. North Korean Propaganda (satirical retro poster style) */
-    body.theme-nk-propaganda {
-        --bg-color:#b91c1c; --panel-color:#b91c1c; --panel-light:#a11818;
-        --pink:#fde047; --blue:#fde047; --gold:#fde047; --ink:#7f1414;
-        --text-color:#fde047; --text-muted:#fca5a5;
-        font-weight:900;
-    }
-    body.theme-nk-propaganda .header, body.theme-nk-propaganda .lobby-card, body.theme-nk-propaganda .modal-content,
-    body.theme-nk-propaganda .board-container, body.theme-nk-propaganda .controls, body.theme-nk-propaganda .leaderboard {
-        background:#b91c1c !important; background-image:none !important;
-        border:12px solid #4b5563 !important; box-shadow:none !important; text-align:center;
-    }
-    body.theme-nk-propaganda h1, body.theme-nk-propaganda h2, body.theme-nk-propaganda h3, body.theme-nk-propaganda .brand {
-        border-bottom:5px solid #fde047; display:inline-block; padding-bottom:5px;
-    }
-    body.theme-nk-propaganda .brand::before { content:"★ "; }
-    body.theme-nk-propaganda .pixel-btn, body.theme-nk-propaganda .btn-main, body.theme-nk-propaganda .btn-secondary,
-    body.theme-nk-propaganda .tab-btn, body.theme-nk-propaganda .back-btn, body.theme-nk-propaganda .btn-logout {
-        background:#991b1b !important; border:5px solid #fde047 !important; color:#fde047 !important;
-        text-transform:uppercase; box-shadow:6px 6px 0 #4b5563 !important;
-    }
-    body.theme-nk-propaganda .pixel-btn:active:not(:disabled) { transform:none !important; }
-
-
+    .rank-list { list-style:none; display:flex; flex-direction:column; gap:6px; max-height:320px; overflow-y:auto; }
+    .rank-row { display:flex; justify-content:space-between; padding:8px 10px; background:var(--panel-light); border-radius:3px; font-size:0.85rem; }
+    .rank-row.me { border:1px solid var(--gold); }
+    .rank-row .name { color:var(--cream); }
+    .rank-row .worth { color:var(--gold-bright); }
 </style>
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute; overflow:hidden;" aria-hidden="true">
-    <filter id="parchmentGrain">
-        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="noise"/>
-        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.55  0 0 0 0 0.42  0 0 0 0 0.25  0 0 0 0.22 0"/>
-    </filter>
-</svg>
-
-<!-- 사이버펑크 테마용 RGB 색수차(글리치) SVG 필터 정의 (화면에는 보이지 않음) -->
-<svg width="0" height="0" style="position:absolute; overflow:hidden;">
-  <defs>
-    <filter id="cyberGlitchRGB" x="-30%" y="-30%" width="160%" height="160%">
-      <feColorMatrix type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="rCh"/>
-      <feOffset in="rCh" dx="-3" dy="0" result="rChOff"/>
-      <feColorMatrix type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="gCh"/>
-      <feOffset in="gCh" dx="0" dy="1" result="gChOff"/>
-      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="bCh"/>
-      <feOffset in="bCh" dx="3" dy="0" result="bChOff"/>
-      <feBlend in="rChOff" in2="gChOff" mode="screen" result="rg"/>
-      <feBlend in="rg" in2="bChOff" mode="screen"/>
-    </filter>
-  </defs>
-</svg>
-
-
-<div id="stockTicker" class="stock-ticker hidden">
-    <div class="stock-ticker-track" id="stockTickerTrack"></div>
-</div>
 
 <div id="authModal" class="modal-overlay">
-    <div class="modal-content">
-        <h2>KEE-PIT</h2>
-        <p class="modal-sub"></p>
+    <div class="modal-card">
+        <h1>Wall Street in Fantasy</h1>
+        <p class="modal-sub">판타지 대륙의 실시간 주식 시장<br>가상의 골드로만 거래되는 시뮬레이션입니다.</p>
         <div class="tabs">
-            <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">LOGIN</button>
-            <button class="tab-btn" id="tabSignup" onclick="switchTab('signup')">SIGN UP</button>
+            <button class="tab-btn active" id="tabLogin" onclick="switchAuthTab('login')">로그인</button>
+            <button class="tab-btn" id="tabSignup" onclick="switchAuthTab('signup')">회원가입</button>
         </div>
-        <input class="pixel-input" type="text" id="authUsername" placeholder="Username (letters/numbers, 3-15 chars)" autocomplete="username">
-        <input class="pixel-input" type="password" id="authPassword" placeholder="Password (6+ characters)" autocomplete="current-password" onkeypress="if(event.key==='Enter') handleAuthSubmit()">
+        <input class="field" type="text" id="authUsername" placeholder="아이디 (영문/숫자 3~15자)" autocomplete="username">
+        <input class="field" type="password" id="authPassword" placeholder="비밀번호 (6자 이상)" autocomplete="current-password" onkeypress="if(event.key==='Enter') handleAuthSubmit()">
         <div class="error-msg" id="authError"></div>
-        <button class="btn-main pixel-btn" style="width:100%; padding:16px;" id="authSubmitBtn" onclick="handleAuthSubmit()">LOGIN</button>
+        <button class="btn" id="authSubmitBtn" onclick="handleAuthSubmit()">로그인</button>
     </div>
 </div>
 
-<div id="mineModal" class="modal-overlay hidden">
-    <div class="modal-content" style="max-width:360px;">
-        <h2>⛏️ MINE</h2>
-        <div class="mine-bar">
-            <div class="mine-target"></div>
-            <div class="mine-marker" id="mineMarker">⛏️</div>
-        </div>
-        <div class="slot-result" id="mineResult"></div>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <button class="btn-main pixel-btn" id="mineStrikeBtn" onclick="mineStrike()" style="flex:1;">STRIKE</button>
-            <button class="btn-secondary pixel-btn" onclick="closeMineModal()" style="flex:1;">CLOSE</button>
-        </div>
-    </div>
-</div>
+<div class="app hidden" id="app">
 
-<div id="sendModal" class="modal-overlay hidden">
-    <div class="modal-content" style="max-width:420px; text-align:left;">
-        <h2 style="text-align:center;">💸 SEND</h2>
-        <input class="pixel-input" type="text" id="sendSearchInput" placeholder="Search username" oninput="renderSendUserList()" style="width:100%; padding:12px; margin-bottom:12px;">
-        <div class="send-user-list" id="sendUserList"></div>
-        <input class="pixel-input" type="number" id="sendAmountInput" placeholder="Amount (kee)" min="1" style="width:100%; padding:12px; margin:12px 0;">
-        <div class="error-msg" id="sendError"></div>
-        <div style="display:flex; gap:10px;">
-            <button class="btn-main pixel-btn" onclick="sendKee()" style="flex:1;">SEND</button>
-            <button class="btn-secondary pixel-btn" onclick="closeSendModal()" style="flex:1;">CLOSE</button>
-        </div>
-    </div>
-</div>
-
-<div id="chartWindowLayer"></div>
-
-<div id="profileModal" class="modal-overlay hidden">
-    <div class="modal-content" style="max-width:420px; text-align:left;">
-        <h2 style="text-align:center;">👤 PROFILE</h2>
-        <p class="modal-sub" style="text-align:center;" id="profileUsername"></p>
-
-        <h3 style="color:var(--blue); font-size:0.75rem; margin:14px 0 10px;">EQUIPPED THEME</h3>
-        <div id="profileThemeList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:20px;"></div>
-
-        <h3 style="color:var(--pink); font-size:0.75rem; margin-bottom:10px;">⚠️ DANGER ZONE</h3>
-        <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:14px;">Deleting your account is permanent. Your balance, portfolio, and progress will be lost forever.</p>
-        <button class="btn-main pixel-btn" style="width:100%; background:var(--pink); color:#000; margin-bottom:10px;" onclick="deleteAccount()">DELETE ACCOUNT</button>
-        <button class="btn-secondary pixel-btn" style="width:100%;" onclick="closeProfileModal()">CLOSE</button>
-    </div>
-</div>
-
-<div class="container" id="gameContainer" style="display:none;">
     <div class="header">
-        <div class="balance-box">
-            <span class="brand">🕹️ KEE-PIT</span>
-            <span class="balance-title" id="balanceTitleLabel">BALANCE</span>
-            <span class="balance-amount">🪙 <span id="balanceDisplay">0</span> kee</span>
+        <div>
+            <div class="brand">Wall Street in Fantasy<small>판타지 대륙 실시간 증권거래소</small></div>
         </div>
-        <div class="user-panel">
-            <span class="user-name" id="currentUserDisplay" onclick="openProfileModal()" style="cursor:pointer;" title="Open profile">P1</span>
-            <button class="btn-logout pixel-btn" onclick="openMineModal()">⛏️ MINE</button>
-            <button class="btn-logout pixel-btn" onclick="openSendModal()">💸 SEND</button>
-            <button class="btn-logout pixel-btn" onclick="logout()">LOGOUT</button>
+        <div class="identity">
+            <span class="title-badge" id="titleBadge">평민</span>
+            <span id="nicknameDisplay" style="font-family:'Cinzel',serif; font-size:0.9rem;"></span>
         </div>
+        <div class="stat-group">
+            <div class="stat">
+                <div class="label">보유 골드</div>
+                <div class="value num" id="goldDisplay">0</div>
+            </div>
+            <div class="stat">
+                <div class="label">총 자산</div>
+                <div class="value small num" id="netWorthDisplay">0</div>
+            </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="logout()">로그아웃</button>
     </div>
 
-    <div class="main-layout">
-        <div class="leaderboard">
-            <h3 id="leaderboardTitle">🏆 HIGH SCORE</h3>
-            <ul class="rank-list" id="rankList">
-                <li style="text-align:center; color:var(--text-muted); margin-top:20px;">Loading...</li>
-            </ul>
+    <div class="news-banner">
+        <div class="news-top">
+            <span class="news-stage s1" id="newsStageBadge">소문</span>
+            <span class="news-timer" id="newsTimer"></span>
+        </div>
+        <div class="news-headline" id="newsHeadline">뉴스를 불러오는 중...</div>
+        <div class="news-bar"><div class="news-bar-fill" id="newsBarFill" style="width:0%"></div></div>
+    </div>
+
+    <div class="main-grid">
+        <div class="panel">
+            <h2>증권 거래소</h2>
+            <p class="panel-sub">가격은 1분마다 갱신되며, 뉴스 3단계(결과) 발표 시 즉시 영향을 받습니다.</p>
+            <div class="stocks-grid" id="stocksGrid"></div>
         </div>
 
-        <div class="game-area">
-
-            <!-- 로비 -->
-            <div id="lobbyView">
-                <div id="themeBanner" class="k-illegal-banner hidden"></div>
-                <div class="lobby-grid">
-                    <div class="lobby-card" onclick="showView('mines')">
-                        <div class="icon" id="mineCardIcon">💣</div>
-                        <div class="name" id="mineCardName">MINES</div>
-                    </div>
-                    <div class="lobby-card" onclick="showView('blackjack')">
-                        <div class="icon" id="blackjackCardIcon">🃏</div>
-                        <div class="name" id="blackjackCardName">BLACKJACK</div>
-                    </div>
-                    <div class="lobby-card" onclick="showView('slots')">
-                        <div class="icon" id="slotsCardIcon">🎰</div>
-                        <div class="name" id="slotsCardName">SLOTS</div>
-                    </div>
-                    <div class="lobby-card" onclick="showView('horse')">
-                        <div class="icon" id="horseCardIcon">🐎</div>
-                        <div class="name" id="horseCardName">HORSE RACE</div>
-                    </div>
-                    <div class="lobby-card" onclick="showView('roulette')">
-                        <div class="icon" id="rouletteCardIcon">🔴</div>
-                        <div class="name" id="rouletteCardName">ROULETTE</div>
-                    </div>
-                    <div class="lobby-card" onclick="showView('market')">
-                        <div class="icon" id="marketCardIcon">📈</div>
-                        <div class="name" id="marketCardName">MARKET</div>
-                    </div>
-                    <div class="lobby-card" onclick="showView('shop')">
-                        <div class="icon">🏪</div>
-                        <div class="name">SHOP</div>
-                    </div>
+        <div class="side-stack">
+            <div class="panel">
+                <h2>왕립 중앙은행 &amp; 고블린 대부업</h2>
+                <p class="panel-sub">예금은 분당 0.5% 자동 이자, 대출은 분당 2% 이자가 붙습니다. 강제 청산은 없지만 이자 연체 시 신규 매수/영지 구매가 잠깁니다.</p>
+                <div class="ledger-row"><span class="k">예금 이자율</span><span class="v">분당 +0.5%</span></div>
+                <div class="ledger-row"><span class="k">대출 원금</span><span class="v num" id="loanPrincipalDisplay">0 G</span></div>
+                <div class="ledger-row"><span class="k">미납 이자</span><span class="v num" id="loanInterestDisplay">0 G</span></div>
+                <div class="ledger-row"><span class="k">대출 한도</span><span class="v num" id="loanLimitDisplay">0 G</span></div>
+                <div id="lockedBadge" class="locked-badge hidden">🔒 이자 연체로 신규 매수/영지 구매가 잠겼습니다. 상환하면 자동 해제됩니다.</div>
+                <div class="btn-row" style="margin-top:14px;">
+                    <input class="field" type="number" id="loanAmountInput" placeholder="금액" style="margin-bottom:0;">
+                </div>
+                <div class="btn-row" style="margin-top:8px;">
+                    <button class="btn btn-sm" onclick="borrowLoan()">대출받기</button>
+                    <button class="btn btn-ghost btn-sm" onclick="repayLoan()">상환하기</button>
                 </div>
             </div>
 
-            <!-- 마인즈 -->
-            <div id="minesView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
-                <button class="back-btn pixel-btn" onclick="exitToLobby('mines')">← LOBBY</button>
-                <div class="controls">
-                    <div class="input-group">
-                        <label>BET</label>
-                        <input class="pixel-input" type="number" id="betInput" min="100" value="1000" step="100">
-                    </div>
-                    <div class="input-group">
-                        <label>MINES</label>
-                        <select class="pixel-input" id="minesSelect">
-                            <option value="1">1</option>
-                            <option value="3" selected>3</option>
-                            <option value="5">5</option>
-                            <option value="10">10</option>
-                            <option value="20">20 (EXTREME)</option>
-                        </select>
-                    </div>
-                    <button class="btn-main pixel-btn" id="actionBtn" onclick="handleActionButton()">GAME START</button>
-                </div>
-                <div class="board-container">
-                    <div class="status-box" id="statusBox">
-                        <span class="next-multiplier">READY</span>
-                    </div>
-                    <div class="grid" id="grid"></div>
-                </div>
+            <div class="panel">
+                <h2>영지 &amp; 작위</h2>
+                <p class="panel-sub">골드를 소비해 영지를 매입하면 영구적인 특전을 얻습니다.</p>
+                <div id="estateList"></div>
             </div>
 
-            <!-- 블랙잭 -->
-            <div id="blackjackView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
-                <button class="back-btn pixel-btn" onclick="exitToLobby('blackjack')">← LOBBY</button>
-                <div class="controls">
-                    <div class="input-group">
-                        <label>BET</label>
-                        <input class="pixel-input" type="number" id="bjBetInput" min="100" value="1000" step="100">
-                    </div>
-                    <button class="btn-main pixel-btn" id="bjDealBtn" onclick="bjDeal()">DEAL</button>
-                </div>
-                <div class="board-container">
-                    <div class="bj-table">
-                        <div>
-                            <div class="bj-hand-label">DEALER <span class="bj-hand-value" id="bjDealerValue"></span></div>
-                            <div class="bj-cards" id="bjDealerCards"></div>
-                        </div>
-                        <div>
-                            <div class="bj-hand-label">PLAYER <span class="bj-hand-value" id="bjPlayerValue"></span></div>
-                            <div class="bj-cards" id="bjPlayerCards"></div>
-                        </div>
-                        <div class="bj-result" id="bjResult"></div>
-                        <div class="bj-actions">
-                            <button class="btn-main pixel-btn" id="bjHitBtn" onclick="bjHit()" disabled>HIT</button>
-                            <button class="btn-secondary pixel-btn" id="bjStandBtn" onclick="bjStand()" disabled>STAND</button>
-                        </div>
-                    </div>
-                </div>
+            <div class="panel">
+                <h2>대륙 부호 순위</h2>
+                <p class="panel-sub">총 자산(골드 + 보유 주식 평가액 − 대출) 기준</p>
+                <ul class="rank-list" id="rankList"></ul>
             </div>
-
-            <!-- 슬롯 -->
-            <div id="slotsView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
-                <button class="back-btn pixel-btn" onclick="exitToLobby('slots')">← LOBBY</button>
-                <div class="controls">
-                    <div class="input-group">
-                        <label>BET</label>
-                        <input class="pixel-input" type="number" id="slotBetInput" min="100" value="1000" step="100">
-                    </div>
-                    <button class="btn-main pixel-btn" id="slotSpinBtn" onclick="slotSpin()">🎰 SPIN</button>
-                </div>
-                <div class="board-container">
-                    <div class="slot-machine">
-                        <div class="slot-grid" id="slotGrid"></div>
-                        <div class="slot-result" id="slotResult"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 경마 -->
-            <div id="horseView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
-                <button class="back-btn pixel-btn" onclick="exitToLobby('horse')">← LOBBY</button>
-                <div class="controls">
-                    <div class="input-group">
-                        <label>BET</label>
-                        <input class="pixel-input" type="number" id="horseBetInput" min="100" value="1000" step="100">
-                    </div>
-                    <button class="btn-main pixel-btn" id="horseRaceBtn" onclick="horseRace()">🏁 RACE</button>
-                </div>
-                <div class="board-container">
-                    <div class="horse-select" id="horseSelect"></div>
-                    <div class="horse-track" id="horseTrack"></div>
-                    <div class="slot-result" id="horseResult"></div>
-                </div>
-            </div>
-
-            <!-- 룰렛 -->
-            <div id="rouletteView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
-                <button class="back-btn pixel-btn" onclick="exitToLobby('roulette')">← LOBBY</button>
-                <div class="controls">
-                    <div class="input-group">
-                        <label>BET</label>
-                        <input class="pixel-input" type="number" id="rouletteBetInput" min="100" value="1000" step="100">
-                    </div>
-                    <div class="input-group">
-                        <label>PICK</label>
-                        <select class="pixel-input" id="rouletteBetType" onchange="onRouletteBetTypeChange()">
-                            <option value="red">RED (x2)</option>
-                            <option value="black">BLACK (x2)</option>
-                            <option value="odd">ODD (x2)</option>
-                            <option value="even">EVEN (x2)</option>
-                            <option value="number">NUMBER (x100)</option>
-                        </select>
-                    </div>
-                    <div class="input-group hidden" id="rouletteNumberGroup">
-                        <label>0-36</label>
-                        <input class="pixel-input" type="number" id="rouletteNumberInput" min="0" max="36" value="0">
-                    </div>
-                    <button class="btn-main pixel-btn" id="rouletteSpinBtn" onclick="rouletteSpin()">🎡 SPIN</button>
-                </div>
-                <div class="board-container">
-                    <div class="roulette-viewport" id="rouletteViewport">
-                        <div class="roulette-pointer">▼</div>
-                        <div class="roulette-strip" id="rouletteStrip"></div>
-                        <div class="roulette-pointer bottom">▲</div>
-                    </div>
-                    <div class="slot-result" id="rouletteResult"></div>
-                </div>
-            </div>
-
-            <!-- 마켓 -->
-            <div id="marketView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
-                <button class="back-btn pixel-btn" onclick="exitToLobby('market')">← LOBBY</button>
-                <div class="tabs" style="max-width:320px;">
-                    <button class="tab-btn active" id="marketTabStocks" onclick="switchMarketTab('stocks')">STOCKS</button>
-                    <button class="tab-btn" id="marketTabCoins" onclick="switchMarketTab('coins')">COINS</button>
-                </div>
-                <div class="board-container">
-                    <div class="market-list" id="stockList"></div>
-                    <div class="market-list hidden" id="coinList"></div>
-                </div>
-            </div>
-
-            <!-- 샵 -->
-            <div id="shopView" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
-                <button class="back-btn pixel-btn" onclick="exitToLobby('shop')">← LOBBY</button>
-                <div class="board-container" style="align-items:stretch;">
-                    <h3 style="color:var(--blue); font-size:0.85rem; margin-bottom:14px;">⛏️ MINE PICKAXE UPGRADE</h3>
-                    <div class="market-list" id="pickaxeList"></div>
-                </div>
-                <div class="board-container" style="align-items:stretch;">
-                    <h3 style="color:var(--gold); font-size:0.85rem; margin-bottom:14px;">🎨 THEMES</h3>
-                    <div class="market-list" id="themeShopList"></div>
-                </div>
-            </div>
-
         </div>
     </div>
 </div>
@@ -923,6 +221,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 <script>
+    // ==========================================
+    // Firebase 초기화 (KEE-PIT과 동일 프로젝트, 별도 네임스페이스로 데이터 분리)
+    // ==========================================
     const firebaseConfig = {
       apiKey: "AIzaSyBgyQkeKHWpiTGhH24neivlM3dN674D1kM",
       authDomain: "kee-pit.firebaseapp.com",
@@ -933,2022 +234,574 @@
       appId: "1:911390417144:web:7a01697f7528e9c0069b0d",
       measurementId: "G-CVYHFVC5RT"
     };
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
 
-    const FAKE_EMAIL_DOMAIN = "@mines.local";
-    const INITIAL_BALANCE = 10000;
-    const GRID_SIZE = 25;
+    const FAKE_EMAIL_DOMAIN = "@wsif.local"; // KEE-PIT(@mines.local)과 겹치지 않는 별도 계정 공간
+    const DB_ROOT = "wsif_users";
+    const INITIAL_GOLD = 100000;
 
-    let currentUser = null;
     let currentUid = null;
-    let balance = 0;
+    let currentUsername = null;
     let authMode = 'login';
-    let currentView = 'lobby';
-
-    let state = { // 마인즈 상태
-        isPlaying: false, betAmount: 0, mineCount: 3,
-        mines: [], revealed: [], currentMultiplier: 1.0, gameOver: false
-    };
-
-    let bjState = { // 블랙잭 상태
-        deck: [], playerHand: [], dealerHand: [], bet: 0, isPlaying: false, revealDealer: false
-    };
-
-    const UI = {
-        balanceDisplay: document.getElementById('balanceDisplay'),
-        betInput: document.getElementById('betInput'),
-        minesSelect: document.getElementById('minesSelect'),
-        actionBtn: document.getElementById('actionBtn'),
-        statusBox: document.getElementById('statusBox'),
-        gridEl: document.getElementById('grid'),
-        rankList: document.getElementById('rankList'),
-        authError: document.getElementById('authError'),
-        authSubmitBtn: document.getElementById('authSubmitBtn'),
-        tabLogin: document.getElementById('tabLogin'),
-        tabSignup: document.getElementById('tabSignup')
-    };
+    let userState = null; // DB에서 로드된 현재 유저 상태 (로컬 캐시)
+    let goldSyncRef = null;
 
     // ==========================================
-    // 0. 아이디 검증 유틸
+    // 결정론적 시세/뉴스 엔진 (서버 없이 모든 클라이언트가 동일한 결과를 계산)
+    // ==========================================
+    const PRICE_EPOCH_MS = 60 * 1000; // 캔들 1개 = 1분
+    const NEWS_STAGE_MS = 30 * 1000;  // 단계당 30초
+    const NEWS_CYCLE_MS = NEWS_STAGE_MS * 3; // 총 90초 (소문→전개→결과)
+
+    const STOCKS = [
+        { id:'forge',  name:'드래곤 대장간',     ticker:'FORG', basePrice:2000, seed:11.7, volatility:0.05, dividendRate:0.014 },
+        { id:'elixir', name:'엘릭서 제약',       ticker:'ELIX', basePrice:1500, seed:37.3, volatility:0.07, dividendRate:0.02 },
+        { id:'guild',  name:'용사 길드',         ticker:'HERO', basePrice:2400, seed:59.1, volatility:0.045, dividendRate:0.012 },
+        { id:'wagon',  name:'마법 마차 물류',     ticker:'WAGN', basePrice:900,  seed:83.9, volatility:0.06, dividendRate:0.018 }
+    ];
+
+    const NEWS_TEMPLATES = [
+        { stock:'forge', dir:1,  s1:'용의 둥지 근처에서 희귀 광맥이 발견됐다는 소문이 돈다.', s2:'드래곤 대장간 길드가 신형 합금 무기 시험에 성공했다.', s3:'왕국군, 드래곤 대장간에 대량 무기 발주 계약을 체결했다!' },
+        { stock:'forge', dir:-1, s1:'변경 지역 대장간에서 화재가 발생했다는 소문이 돈다.', s2:'주요 원자재 공급망이 일부 차단된 것으로 확인됐다.', s3:'드래곤 대장간, 무기 생산 중단으로 재고가 바닥났다!' },
+        { stock:'elixir', dir:1,  s1:'엘릭서 제약이 불사의 영약을 연구 중이라는 소문이 돈다.', s2:'임상 시험에서 놀라운 회복 효능이 확인됐다.', s3:'엘릭서 제약, 왕실 전속 포션 공급 계약을 체결했다!' },
+        { stock:'elixir', dir:-1, s1:'포션 원료인 마나꽃이 저주에 걸렸다는 소문이 돈다.', s2:'일부 포션에서 부작용 사례가 보고됐다.', s3:'엘릭서 제약, 대규모 리콜 사태가 발생했다!' },
+        { stock:'guild', dir:1,  s1:'용사 길드가 마왕 잔당 토벌에 나선다는 소문이 돈다.', s2:'토벌대가 던전 심층부에서 대량의 보물을 확보했다.', s3:'용사 길드, 토벌 성공과 함께 보상금을 대량 획득했다!' },
+        { stock:'guild', dir:-1, s1:'용사 길드 정예 파티가 실종됐다는 소문이 돈다.', s2:'구조대마저 던전에서 고전 중인 것으로 전해졌다.', s3:'용사 길드, 토벌 실패로 위약금을 지불했다!' },
+        { stock:'wagon', dir:1,  s1:'마법 마차 물류가 신항로를 개척 중이라는 소문이 돈다.', s2:'신항로 시험 운행에서 운송 시간이 대폭 단축됐다.', s3:'마법 마차 물류, 대륙 전역 독점 유통 계약을 체결했다!' },
+        { stock:'wagon', dir:-1, s1:'산길에 몬스터가 출몰한다는 소문이 돈다.', s2:'마차 호위대가 몬스터의 습격을 받은 것으로 확인됐다.', s3:'마법 마차 물류, 화물 손실로 손해배상을 청구받았다!' }
+    ];
+
+    function hashRandom(seed) {
+        const x = Math.sin(seed) * 43758.5453123;
+        return x - Math.floor(x);
+    }
+    function currentPriceEpoch() { return Math.floor(Date.now() / PRICE_EPOCH_MS); }
+    function currentNewsCycleIndex() { return Math.floor(Date.now() / NEWS_CYCLE_MS); }
+    function newsForCycle(cycleIndex) {
+        const r = hashRandom(cycleIndex * 12.9898 + 4.1414);
+        return NEWS_TEMPLATES[Math.floor(r * NEWS_TEMPLATES.length) % NEWS_TEMPLATES.length];
+    }
+    function currentNewsState() {
+        const cycleIndex = currentNewsCycleIndex();
+        const posInCycle = Date.now() - cycleIndex * NEWS_CYCLE_MS;
+        const stage = Math.min(3, Math.floor(posInCycle / NEWS_STAGE_MS) + 1);
+        const news = newsForCycle(cycleIndex);
+        const stageStartMs = cycleIndex * NEWS_CYCLE_MS + (stage - 1) * NEWS_STAGE_MS;
+        const msIntoStage = Date.now() - stageStartMs;
+        return { news, stage, cycleIndex, progressPct: Math.min(100, (msIntoStage / NEWS_STAGE_MS) * 100) };
+    }
+    // 특정 종목에 대해, epoch 시점까지 "결과(3단계)"가 발표된 뉴스들의 누적 영향치 (최근 15사이클, 감쇠 적용)
+    function priceImpactForStock(stockId, epoch) {
+        const epochMs = epoch * PRICE_EPOCH_MS;
+        const maxCycle = Math.floor(epochMs / NEWS_CYCLE_MS);
+        let impact = 0;
+        for (let c = maxCycle; c > maxCycle - 15 && c >= 0; c--) {
+            const resolvedAtMs = c * NEWS_CYCLE_MS + NEWS_STAGE_MS * 3;
+            if (resolvedAtMs > epochMs) continue;
+            const news = newsForCycle(c);
+            if (news.stock !== stockId) continue;
+            const age = maxCycle - c;
+            const decay = Math.max(0, 1 - age / 15);
+            impact += news.dir * 0.12 * decay;
+        }
+        return impact;
+    }
+    function priceAtEpoch(stock, epoch) {
+        const r = hashRandom(stock.seed + epoch * 0.37);
+        const trendR = hashRandom(stock.seed + Math.floor(epoch / 5) * 1.91);
+        const walk = (r - 0.5) * stock.volatility;
+        const trend = (trendR - 0.5) * stock.volatility * 1.5;
+        const newsImpact = priceImpactForStock(stock.id, epoch);
+        const pct = walk + trend + newsImpact;
+        return Math.max(10, stock.basePrice * (1 + pct));
+    }
+    function getStock(id) { return STOCKS.find(s => s.id === id); }
+
+    // ==========================================
+    // 인증
     // ==========================================
     function isValidUsername(name) { return /^[a-zA-Z0-9_]{3,15}$/.test(name); }
     function usernameToEmail(name) { return name.toLowerCase() + FAKE_EMAIL_DOMAIN; }
 
-    // ==========================================
-    // 1. 인증(로그인/회원가입) 로직
-    // ==========================================
-    window.switchTab = function(mode) {
+    window.switchAuthTab = function(mode) {
         authMode = mode;
-        UI.authError.innerText = '';
-        if (mode === 'login') {
-            UI.tabLogin.classList.add('active'); UI.tabSignup.classList.remove('active');
-            UI.authSubmitBtn.innerText = 'LOGIN';
-        } else {
-            UI.tabSignup.classList.add('active'); UI.tabLogin.classList.remove('active');
-            UI.authSubmitBtn.innerText = 'SIGN UP';
-        }
+        document.getElementById('authError').innerText = '';
+        document.getElementById('tabLogin').classList.toggle('active', mode === 'login');
+        document.getElementById('tabSignup').classList.toggle('active', mode === 'signup');
+        document.getElementById('authSubmitBtn').innerText = mode === 'login' ? '로그인' : '회원가입';
     };
 
     window.handleAuthSubmit = async function() {
         const username = document.getElementById('authUsername').value.trim();
         const password = document.getElementById('authPassword').value;
-        UI.authError.innerText = '';
+        const errorEl = document.getElementById('authError');
+        errorEl.innerText = '';
 
-        if (!isValidUsername(username)) { UI.authError.innerText = 'Username must be 3-15 letters/numbers/underscores.'; return; }
-        if (!password || password.length < 6) { UI.authError.innerText = 'Password must be at least 6 characters.'; return; }
+        if (!isValidUsername(username)) { errorEl.innerText = '아이디는 영문/숫자/밑줄 3~15자여야 합니다.'; return; }
+        if (!password || password.length < 6) { errorEl.innerText = '비밀번호는 6자 이상이어야 합니다.'; return; }
 
-        UI.authSubmitBtn.disabled = true;
+        const btn = document.getElementById('authSubmitBtn');
+        btn.disabled = true;
         const email = usernameToEmail(username);
-
         try {
             if (authMode === 'signup') {
                 const cred = await auth.createUserWithEmailAndPassword(email, password);
-                await db.ref('users/' + cred.user.uid).set({ username, balance: INITIAL_BALANCE });
+                await db.ref(DB_ROOT + '/' + cred.user.uid).set(createNewUserState(username));
             } else {
                 await auth.signInWithEmailAndPassword(email, password);
             }
-        } catch (error) {
-            UI.authError.innerText = mapAuthError(error.code);
+        } catch (e) {
+            errorEl.innerText = mapAuthError(e.code);
         } finally {
-            UI.authSubmitBtn.disabled = false;
+            btn.disabled = false;
         }
     };
 
     function mapAuthError(code) {
         switch (code) {
-            case 'auth/email-already-in-use': return 'This username is already taken.';
+            case 'auth/email-already-in-use': return '이미 존재하는 아이디입니다.';
             case 'auth/invalid-credential':
-            case 'auth/wrong-password': return 'Incorrect username or password.';
-            case 'auth/user-not-found': return 'This username does not exist.';
-            case 'auth/weak-password': return 'Password is too weak (6+ characters).';
-            case 'auth/too-many-requests': return 'Too many attempts. Try again later.';
-            case 'auth/configuration-not-found': return 'Please enable Email/Password sign-in in the Firebase console.';
-            default: return 'An error occurred: ' + code;
+            case 'auth/wrong-password': return '아이디 또는 비밀번호가 틀렸습니다.';
+            case 'auth/user-not-found': return '존재하지 않는 아이디입니다.';
+            case 'auth/weak-password': return '비밀번호가 너무 약합니다.';
+            case 'auth/configuration-not-found': return 'Firebase 콘솔에서 이메일/비밀번호 로그인을 활성화해주세요.';
+            default: return '오류가 발생했습니다: ' + code;
         }
     }
+
+    function createNewUserState(username) {
+        const now = Date.now();
+        return {
+            nickname: username,
+            gold: INITIAL_GOLD,
+            loanPrincipal: 0,
+            loanUnpaidInterest: 0,
+            isLocked: false,
+            lastTickAt: now,
+            lastDividendAt: now,
+            portfolio: {},
+            realEstate: { merchantHQ:false, knightTerritory:false, academyHQ:false, lordTitle:false }
+        };
+    }
+
+    window.logout = function() {
+        auth.signOut();
+    };
 
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             currentUid = user.uid;
+            currentUsername = user.email.replace(FAKE_EMAIL_DOMAIN, '');
             try {
-                const snapshot = await db.ref('users/' + currentUid).get();
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    currentUser = data.username; balance = data.balance;
-                    pickaxeLevel = data.pickaxeLevel || 0;
-                    ownedThemes = data.ownedThemes || ['classic'];
-                    if (!ownedThemes.includes('classic')) ownedThemes.unshift('classic');
-                    equippedTheme = data.equippedTheme || 'classic';
-                    marketPortfolio = data.portfolio || {};
-                    Object.keys(marketPortfolio).forEach(sym => {
-                        if (typeof marketPortfolio[sym] === 'number') {
-                            marketPortfolio[sym] = { qty: marketPortfolio[sym], avgCost: 0 };
-                        }
-                    });
+                const snap = await db.ref(DB_ROOT + '/' + currentUid).get();
+                if (snap.exists()) {
+                    userState = normalizeUserState(snap.val());
                 } else {
-                    currentUser = user.email.replace(FAKE_EMAIL_DOMAIN, '');
-                    balance = INITIAL_BALANCE;
-                    marketPortfolio = {};
-                    pickaxeLevel = 0;
-                    ownedThemes = ['classic'];
-                    equippedTheme = 'classic';
-                    await db.ref('users/' + currentUid).set({ username: currentUser, balance });
+                    userState = createNewUserState(currentUsername);
+                    await db.ref(DB_ROOT + '/' + currentUid).set(userState);
                 }
                 document.getElementById('authModal').classList.add('hidden');
-                document.getElementById('gameContainer').style.display = 'flex';
-                document.getElementById('currentUserDisplay').innerText = currentUser;
-                updateBalanceUI();
-                startBalanceSync();
-                applyTheme(equippedTheme);
-                showView('lobby');
-                startLeaderboardSync();
-                startStockTicker();
-            } catch (error) {
-                console.error("Firebase DB Error:", error);
-                alert("Failed to connect to the database. Please check your Realtime Database rules.");
+                document.getElementById('app').classList.remove('hidden');
+                document.getElementById('nicknameDisplay').innerText = userState.nickname;
+
+                await applyPassiveTick(); // 접속 즉시 정산
+                renderAll();
+                startLiveSync();
+                startTimers();
+            } catch (e) {
+                console.error(e);
+                alert('데이터베이스 연결에 실패했습니다. Realtime Database 규칙을 확인하세요.');
             }
         } else {
-            currentUid = null; currentUser = null;
+            currentUid = null; userState = null;
             document.getElementById('authModal').classList.remove('hidden');
-            document.getElementById('gameContainer').style.display = 'none';
-            stopStockTicker();
-            stopBalanceSync();
-            document.body.className = '';
+            document.getElementById('app').classList.add('hidden');
+            stopLiveSync();
+            stopTimers();
         }
     });
 
-    window.logout = function() {
-        if (state.isPlaying || bjState.isPlaying || raceInProgress || rouletteSpinning) return alert('A game is in progress. Finish it before logging out.');
-        auth.signOut();
-        document.getElementById('authUsername').value = '';
-        document.getElementById('authPassword').value = '';
-    };
-
-    // ==========================================
-    // 광산 (Mine) - 리듬 타이밍 미니게임
-    // ==========================================
-    const MINE_PERIOD = 1300; // ms, 왕복 한 주기
-    const MINE_TARGET_MIN = 42; // %
-    const MINE_TARGET_MAX = 58; // %
-    const MINE_BASE_REWARD = 100;
-    const PICKAXE_MULTIPLIERS = [1, 100, 10000]; // 0:기본, 1:철, 2:황금
-    const PICKAXE_PRICES = [0, 10000000000, 100000000000]; // 100억, 1000억
-    const PICKAXE_NAMES = ['WOOD PICKAXE', 'IRON PICKAXE', 'GOLD PICKAXE'];
-    let pickaxeLevel = 0;
-    let mineActive = false;
-    let mineAnimId = null;
-    let mineStartTime = null;
-
-    window.openMineModal = function() {
-        if (state.isPlaying || bjState.isPlaying || raceInProgress || rouletteSpinning) return alert('Finish your current game first.');
-        document.getElementById('mineModal').classList.remove('hidden');
-        document.getElementById('mineResult').innerText = '';
-        document.getElementById('mineStrikeBtn').disabled = false;
-        startMineAnimation();
-    };
-
-    window.closeMineModal = function() {
-        stopMineAnimation();
-        document.getElementById('mineModal').classList.add('hidden');
-    };
-
-    function startMineAnimation() {
-        mineActive = true;
-        mineStartTime = performance.now();
-        const marker = document.getElementById('mineMarker');
-        function frame(now) {
-            if (!mineActive) return;
-            const t = (now - mineStartTime) % MINE_PERIOD;
-            const phase = (t / MINE_PERIOD) * Math.PI * 2;
-            const pos = 50 - 47 * Math.cos(phase); // 3% ~ 97% 왕복
-            marker.style.left = `${pos}%`;
-            mineAnimId = requestAnimationFrame(frame);
-        }
-        mineAnimId = requestAnimationFrame(frame);
-    }
-
-    function stopMineAnimation() {
-        mineActive = false;
-        if (mineAnimId) cancelAnimationFrame(mineAnimId);
-        mineAnimId = null;
-    }
-
-    window.mineStrike = async function() {
-        if (!mineActive) return;
-        const marker = document.getElementById('mineMarker');
-        const pos = parseFloat(marker.style.left);
-        stopMineAnimation();
-        document.getElementById('mineStrikeBtn').disabled = true;
-
-        const resultEl = document.getElementById('mineResult');
-        if (pos >= MINE_TARGET_MIN && pos <= MINE_TARGET_MAX) {
-            const reward = MINE_BASE_REWARD * PICKAXE_MULTIPLIERS[pickaxeLevel];
-            balance += reward;
-            await syncBalanceToDB();
-            updateBalanceUI();
-            resultEl.innerText = `⛏️ HIT! +${reward.toLocaleString()} kee${themedJackpotSuffix()}`;
-            resultEl.style.color = 'var(--gold)';
-        } else {
-            resultEl.innerText = '💨 MISS';
-            resultEl.style.color = 'var(--pink)';
-        }
-
-        setTimeout(() => {
-            if (document.getElementById('mineModal').classList.contains('hidden')) return;
-            document.getElementById('mineStrikeBtn').disabled = false;
-            resultEl.innerText = '';
-            startMineAnimation();
-        }, 800);
-    };
-
-    // ==========================================
-    // 송금 (Send)
-    // ==========================================
-    let sendSelectedUid = null;
-
-    window.openSendModal = function() {
-        if (state.isPlaying || bjState.isPlaying || raceInProgress || rouletteSpinning) return alert('Finish your current game first.');
-        sendSelectedUid = null;
-        document.getElementById('sendSearchInput').value = '';
-        document.getElementById('sendAmountInput').value = '';
-        document.getElementById('sendError').innerText = '';
-        document.getElementById('sendError').style.color = 'var(--pink)';
-        document.getElementById('sendModal').classList.remove('hidden');
-        renderSendUserList();
-    };
-
-    window.closeSendModal = function() {
-        document.getElementById('sendModal').classList.add('hidden');
-    };
-
-    window.renderSendUserList = function() {
-        const listEl = document.getElementById('sendUserList');
-        const query = document.getElementById('sendSearchInput').value.trim().toLowerCase();
-        const filtered = allUsersCache.filter(u => u.uid !== currentUid && (!query || u.name.toLowerCase().includes(query)));
-        if (filtered.length === 0) {
-            listEl.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:10px;">No users found</div>';
-            return;
-        }
-        listEl.innerHTML = filtered.map(u => `
-            <div class="send-user-row ${u.uid === sendSelectedUid ? 'selected' : ''}" onclick="selectSendUser('${u.uid}')">
-                <span>${u.name}</span>
-                <span class="send-user-balance">${u.balance.toLocaleString()} kee</span>
-            </div>
-        `).join('');
-    };
-
-    window.selectSendUser = function(uid) {
-        sendSelectedUid = uid;
-        renderSendUserList();
-    };
-
-    window.sendKee = async function() {
-        const errorEl = document.getElementById('sendError');
-        errorEl.style.color = 'var(--pink)';
-        errorEl.innerText = '';
-
-        if (!sendSelectedUid) { errorEl.innerText = 'Select a user to send to.'; return; }
-        if (sendSelectedUid === currentUid) { errorEl.innerText = "You can't send to yourself."; return; }
-        const amount = parseFloat(document.getElementById('sendAmountInput').value);
-        if (isNaN(amount) || amount <= 0) { errorEl.innerText = 'Enter a valid amount.'; return; }
-        if (amount > balance) { errorEl.innerText = 'Not enough coins!'; return; }
-
-        balance -= amount;
-        await syncBalanceToDB();
-        updateBalanceUI();
-
-        try {
-            await db.ref('users/' + sendSelectedUid + '/balance').transaction(current => (current || 0) + amount);
-        } catch (e) {
-            balance += amount;
-            await syncBalanceToDB();
-            updateBalanceUI();
-            console.error('Send kee error:', e);
-            errorEl.innerText = `Transfer failed (${e.code || e.message || 'unknown error'}). This is usually a Realtime Database rules issue.`;
-            return;
-        }
-
-        const recipient = allUsersCache.find(u => u.uid === sendSelectedUid);
-        errorEl.style.color = 'var(--gold)';
-        errorEl.innerText = `Sent ${amount.toLocaleString()} kee to ${recipient ? recipient.name : 'user'}!`;
-        document.getElementById('sendAmountInput').value = '';
-    };
-
-    // ==========================================
-    // 샵 (곡괭이 업그레이드 + 계정 탈퇴)
-    // ==========================================
-    function renderShop() {
-        const list = document.getElementById('pickaxeList');
-        let html = '';
-        for (let tier = 1; tier <= 2; tier++) {
-            const owned = pickaxeLevel >= tier;
-            const canBuy = pickaxeLevel === tier - 1;
-            let actionHtml;
-            if (owned) {
-                actionHtml = `<span style="color:var(--gold); font-family:'Press Start 2P', monospace; font-size:0.6rem;">OWNED</span>`;
-            } else if (canBuy) {
-                actionHtml = `<button class="btn-main pixel-btn" onclick="buyPickaxe(${tier})">BUY</button>`;
-            } else {
-                actionHtml = `<span style="color:var(--text-muted); font-family:'Press Start 2P', monospace; font-size:0.55rem;">LOCKED</span>`;
-            }
-            html += `
-            <div class="market-row">
-                <div class="market-info">
-                    <div class="market-name">${PICKAXE_NAMES[tier]}</div>
-                    <div class="market-price">${PICKAXE_PRICES[tier].toLocaleString()} kee</div>
-                    <div class="market-holding">Mine reward x${PICKAXE_MULTIPLIERS[tier].toLocaleString()} (${MINE_BASE_REWARD} → ${(MINE_BASE_REWARD * PICKAXE_MULTIPLIERS[tier]).toLocaleString()} kee per hit)</div>
-                </div>
-                <div class="market-actions">${actionHtml}</div>
-            </div>`;
-        }
-        list.innerHTML = html;
-    }
-
-    window.buyPickaxe = async function(tier) {
-        if (pickaxeLevel !== tier - 1) return;
-        const price = PICKAXE_PRICES[tier];
-        if (balance < price) return alert('Not enough coins!');
-        balance -= price;
-        pickaxeLevel = tier;
-        await syncBalanceToDB();
-        await db.ref('users/' + currentUid).update({ pickaxeLevel });
-        updateBalanceUI();
-        renderShop();
-    };
-
-    window.deleteAccount = async function() {
-        if (!confirm('This will permanently delete your account and all progress. This cannot be undone. Continue?')) return;
-        if (!confirm('Final confirmation: are you absolutely sure you want to delete your account?')) return;
-
-        try {
-            const uid = currentUid;
-            await db.ref('users/' + uid).remove();
-            await auth.currentUser.delete();
-        } catch (error) {
-            console.error('Delete account error:', error);
-            if (error.code === 'auth/requires-recent-login') {
-                alert('For security, please log out and log back in, then try deleting your account again.');
-            } else {
-                alert('Failed to delete account: ' + error.code);
-            }
-        }
-    };
-
-    // ==========================================
-    // 테마 (Shop에서 구매, Profile에서 장착)
-    // ==========================================
-    const THEMES = [
-        {
-            id: 'cyberpunk', name: 'CYBERPUNK NEON', price: 100000000000,
-            swatches: ['#0B0E14', '#7C3AED', '#06B6D4', '#F43F5E'],
-            labels: {
-                balanceTitle: 'CREDITS',
-                mineCardName: 'CYBER PSYCHO HUNT',
-                slotsCardName: 'CHROME JACKPOT',
-                blackjackCardName: 'DATA HACK',
-                horseCardName: 'SANDEVISTAN RACE',
-                rouletteCardName: 'NEON ROULETTE',
-                marketCardName: 'MEGACORP SECURITIES'
-            },
-            icons: { mine: '🧠', blackjack: '💾', slots: '🎰', horse: '🤖', roulette: '🌀', market: '📡' },
-            jackpotText: '>> JACKPOT.EXE',
-            slotIcons: [
-                `<svg viewBox="0 0 24 24" width="26" height="26"><rect x="6" y="6" width="12" height="12" fill="none" stroke="#06B6D4" stroke-width="1.5"/><line x1="6" y1="2" x2="6" y2="6" stroke="#06B6D4" stroke-width="1.5"/><line x1="10" y1="2" x2="10" y2="6" stroke="#06B6D4" stroke-width="1.5"/><line x1="14" y1="2" x2="14" y2="6" stroke="#06B6D4" stroke-width="1.5"/><line x1="18" y1="2" x2="18" y2="6" stroke="#06B6D4" stroke-width="1.5"/><line x1="6" y1="18" x2="6" y2="22" stroke="#06B6D4" stroke-width="1.5"/><line x1="10" y1="18" x2="10" y2="22" stroke="#06B6D4" stroke-width="1.5"/><line x1="14" y1="18" x2="14" y2="22" stroke="#06B6D4" stroke-width="1.5"/><line x1="18" y1="18" x2="18" y2="22" stroke="#06B6D4" stroke-width="1.5"/><circle cx="12" cy="12" r="2" fill="#06B6D4"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M2 12 Q12 4 22 12 Q12 20 2 12 Z" fill="none" stroke="#06B6D4" stroke-width="1.5"/><circle cx="12" cy="12" r="4" fill="#F43F5E"/><circle cx="12" cy="12" r="1.5" fill="#000"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><rect x="3" y="7" width="16" height="10" fill="none" stroke="#06B6D4" stroke-width="1.5"/><rect x="19" y="10" width="2.5" height="4" fill="#06B6D4"/><rect x="5" y="9" width="4" height="6" fill="#facc15"/><path d="M11 9 L9 13 L11 13 L9 17" stroke="#facc15" stroke-width="1.2" fill="none"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><rect x="9" y="9" width="6" height="6" transform="rotate(45 12 12)" fill="none" stroke="#06B6D4" stroke-width="1.5"/><line x1="4" y1="4" x2="9" y2="9" stroke="#06B6D4" stroke-width="1.5"/><line x1="20" y1="20" x2="15" y2="15" stroke="#06B6D4" stroke-width="1.5"/><rect x="1" y="1" width="5" height="3" fill="#7C3AED"/><rect x="18" y="20" width="5" height="3" fill="#7C3AED"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><rect x="4" y="6" width="16" height="14" rx="2" fill="none" stroke="#06B6D4" stroke-width="1.5"/><circle cx="9" cy="12" r="1.8" fill="#06B6D4"/><circle cx="15" cy="12" r="1.8" fill="#F43F5E"/><line x1="12" y1="2" x2="12" y2="6" stroke="#06B6D4" stroke-width="1.5"/><circle cx="12" cy="2" r="1.3" fill="#facc15"/><line x1="8" y1="17" x2="16" y2="17" stroke="#06B6D4" stroke-width="1.2"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M13 2 L4 14 L11 14 L9 22 L20 9 L13 9 Z" fill="#facc15" stroke="#F43F5E" stroke-width="1"/></svg>`
-            ],
-            horseIcon: `<svg viewBox="0 0 32 24" width="30" height="22"><path d="M4 20 L4 14 Q4 8 10 8 L14 8 L16 4 L20 4 L19 8 L24 8 Q28 8 28 12 L28 16 L30 18 L28 20 L24 20 L24 16 L10 16 L10 20 Z" fill="none" stroke="#06B6D4" stroke-width="1.3"/><circle cx="19" cy="7" r="1.2" fill="#F43F5E"/></svg>`,
-            marketNames: {
-                AAPL: 'KUROMORI DYNAMICS', MSFT: 'CHROMEDYNE OS', TSLA: 'BLACKICE MOTORS',
-                AMZN: 'NEONOVA LOGISTICS', NVDA: 'SYNAPTECH CORE',
-                BTC: 'EDDIE (크레딧체인)', ETH: 'GHOSTCOIN', SOL: 'NETRUNNER COIN', DOGE: 'SCAV-COIN'
-            }
-        },
-        {
-            id: 'medieval', name: 'MEDIEVAL TAVERN', price: 100000000000,
-            swatches: ['#1C1917', '#F59E0B', '#881337', '#D97706'],
-            labels: {
-                balanceTitle: '골드 (GOLD)',
-                mineCardName: '숲속 곰 사냥',
-                slotsCardName: '야바위',
-                blackjackCardName: '선술집 카드 승부',
-                horseCardName: '용기사 레이스',
-                rouletteCardName: '운명의 수레바퀴',
-                marketCardName: '항구 교역소',
-                leaderboardTitle: '명예의 전당'
-            },
-            icons: { mine: '🐻', blackjack: '🎭', slots: '🥣', horse: '🐉', roulette: '🎡', market: '⚓' },
-            jackpotText: '전설의 보물을 발견했다!',
-            mineIcons: {
-                gem: `<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3C7 5 4 10 4 14a8 8 0 0016 0c0-4-3-9-8-11z" fill="#4ade80" stroke="#166534" stroke-width="1.2"/><path d="M12 5 L12 20" stroke="#166534" stroke-width="1"/></svg>`,
-                mine: `<svg viewBox="0 0 24 24" width="22" height="22"><ellipse cx="12" cy="15" rx="6" ry="5" fill="#5c3a21" stroke="#2e1a0f" stroke-width="1"/><circle cx="5" cy="8" r="2.2" fill="#5c3a21" stroke="#2e1a0f" stroke-width="1"/><circle cx="10" cy="4.5" r="2.2" fill="#5c3a21" stroke="#2e1a0f" stroke-width="1"/><circle cx="15" cy="4.5" r="2.2" fill="#5c3a21" stroke="#2e1a0f" stroke-width="1"/><circle cx="19" cy="8" r="2.2" fill="#5c3a21" stroke="#2e1a0f" stroke-width="1"/></svg>`
-            },
-            slotIcons: [
-                `<svg viewBox="0 0 24 24" width="26" height="26"><ellipse cx="12" cy="12" rx="8" ry="5" fill="#f5f0e6" stroke="#78350f" stroke-width="1.3"/><path d="M4 12 Q12 8 20 12" stroke="#d97706" stroke-width="1" fill="none"/><path d="M4 12 Q12 16 20 12" stroke="#d97706" stroke-width="1" fill="none"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 3 L19 20 L5 20 Z" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.2"/><path d="M12 3 L15 20 M12 3 L9 20" stroke="#9ca3af" stroke-width="0.8"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><rect x="6" y="9" width="12" height="9" rx="1.5" fill="#78716c" stroke="#292524" stroke-width="1.2"/><rect x="8" y="5" width="8" height="5" fill="#57534e" stroke="#292524" stroke-width="1"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M7 15 Q6 8 12 5 Q18 8 17 15 Z" fill="#b45309" stroke="#78350f" stroke-width="1.2"/><ellipse cx="12" cy="16" rx="6" ry="2.3" fill="#92400e" stroke="#78350f" stroke-width="1"/><circle cx="10" cy="10" r="0.8" fill="#fcd34d"/><circle cx="13" cy="9" r="0.8" fill="#fcd34d"/><circle cx="12" cy="12" r="0.8" fill="#fcd34d"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="12" r="8" fill="#fcd34d" stroke="#92400e" stroke-width="1.3"/><circle cx="12" cy="12" r="5" fill="none" stroke="#92400e" stroke-width="1"/><path d="M12 8 L13.2 11 L16 11 L13.7 13 L14.5 16 L12 14.2 L9.5 16 L10.3 13 L8 11 L10.8 11 Z" fill="#92400e"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M4 9 L7 4 L9 8 L12 3 L15 8 L17 4 L20 9 L18 17 L6 17 Z" fill="#fcd34d" stroke="#92400e" stroke-width="1.2"/><circle cx="7" cy="4" r="1.1" fill="#f43f5e"/><circle cx="12" cy="3" r="1.1" fill="#f43f5e"/><circle cx="17" cy="4" r="1.1" fill="#f43f5e"/></svg>`
-            ],
-            horseIcon: `<svg viewBox="0 0 32 24" width="30" height="22"><path d="M6 20 Q4 14 8 11 L10 6 L13 8 L12 11 L18 11 Q22 6 26 8 Q24 10 22 11 L24 14 Q26 15 27 13 Q28 16 25 18 L20 17 L18 20 L14 20 L15 17 L9 17 L8 20 Z" fill="#166534" stroke="#052e16" stroke-width="1"/><circle cx="10" cy="9" r="1" fill="#fcd34d"/></svg>`,
-            marketNames: {
-                AAPL: 'Silk Bolts', MSFT: 'Iron Ingots', TSLA: 'Dragon-Drawn Carts', AMZN: 'Trade Caravans', NVDA: 'Enchanted Gems',
-                '005930': 'Royal Armory', '000660': 'Alchemist Vaults', '035420': 'Town Crier Guild', '035720': 'Messenger Ravens', '005380': 'Dwarven Wagons',
-                BTC: 'Dragon Gold', ETH: 'Mage Crystals', SOL: 'Phoenix Feathers', DOGE: 'Goblin Trinkets', XRP: 'Elven Silver',
-                WEMIX: 'Guild Tokens', KLAY: 'Clay Talismans', ICX: 'Ice Shards', BORA: 'Spirit Beads', MED: "Healer's Charms"
-            }
-        },
-        {
-            id: 'lofi', name: 'LO-FI STUDY & CHILL', price: 100000000000,
-            swatches: ['#F3E9DC', '#C0D6DF', '#D8E2DC', '#5E503F'],
-            labels: { balanceTitle: 'kee (포근한 포인트)' }
-        },
-        {
-            id: 'anime', name: 'ANIME ARCADE', price: 100000000000,
-            swatches: ['#F472B6', '#A855F7', '#FFFFFF', '#FACC15'],
-            labels: {
-                balanceTitle: '하트 포인트',
-                mineCardName: '폭탄마 마법소녀',
-                slotsCardName: '가챠 뽑기',
-                blackjackCardName: '마법진 TCG',
-                horseCardName: '지각생 달리기',
-                rouletteCardName: '벌칙 다트판',
-                marketCardName: '아이돌 팬덤',
-                leaderboardTitle: '인기 순위'
-            },
-            icons: { mine: '🪄', blackjack: '🎴', slots: '🎁', horse: '🍞', roulette: '🎯', market: '💗' },
-            jackpotText: '대박! (FEVER TIME)',
-            mineIcons: {
-                gem: `<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 2 L14.5 9 L22 9 L16 13.5 L18 21 L12 16.5 L6 21 L8 13.5 L2 9 L9.5 9 Z" fill="#facc15" stroke="#a855f7" stroke-width="1"/><circle cx="12" cy="11" r="2" fill="#f472b6"/></svg>`,
-                mine: `<svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="14" r="7" fill="#3b0764" stroke="#f472b6" stroke-width="1.3"/><path d="M12 7 L10 2 M12 7 L14 2" stroke="#f472b6" stroke-width="1.3"/><circle cx="9" cy="13" r="1.3" fill="#fff"/><circle cx="15" cy="13" r="1.3" fill="#fff"/><path d="M9 17 Q12 19 15 17" stroke="#fff" stroke-width="1.2" fill="none"/><path d="M4 10 Q2 8 3 5 Q6 6 6 9" fill="#f472b6" opacity="0.8"/><path d="M20 10 Q22 8 21 5 Q18 6 18 9" fill="#f472b6" opacity="0.8"/></svg>`
-            },
-            slotIcons: [
-                `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 3 L14.2 9 L21 9 L15.5 13 L17.5 20 L12 16 L6.5 20 L8.5 13 L3 9 L9.8 9 Z" fill="#fde68a" stroke="#d97706" stroke-width="1"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 20 Q4 20 4 13 Q4 8 8 8 Q9 5 12 5 Q15 5 16 8 Q20 8 20 13 Q20 20 12 20 Z" fill="#fbcfe8" stroke="#db2777" stroke-width="1.2"/><circle cx="9" cy="13" r="1" fill="#db2777"/><circle cx="15" cy="13" r="1" fill="#db2777"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 12 C6 6 2 8 4 12 C2 16 6 18 12 12 C18 18 22 16 20 12 C22 8 18 6 12 12 Z" fill="#f472b6" stroke="#a855f7" stroke-width="1"/><circle cx="12" cy="12" r="1.6" fill="#a855f7"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M3 9 L6 18 L18 18 L21 9 L16 12 L12 6 L8 12 Z" fill="#fde047" stroke="#a16207" stroke-width="1.2"/><circle cx="6" cy="8" r="1.2" fill="#fde047"/><circle cx="12" cy="5" r="1.2" fill="#fde047"/><circle cx="18" cy="8" r="1.2" fill="#fde047"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 4 C12 4 5 8 5 13 Q5 19 12 20 Q19 19 19 13 C19 8 12 4 12 4 Z" fill="#fff" stroke="#a855f7" stroke-width="1.2"/><path d="M12 8 C12 8 8 10 8 13" stroke="#f472b6" stroke-width="0.8" fill="none"/></svg>`,
-                `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 2 L15 9 L22 9 L16.5 13.5 L18.5 21 L12 16.5 L5.5 21 L7.5 13.5 L2 9 L9 9 Z" fill="url(#animeGemGrad)" stroke="#a855f7" stroke-width="1"/><defs><linearGradient id="animeGemGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f472b6"/><stop offset="100%" stop-color="#facc15"/></linearGradient></defs></svg>`
-            ],
-            horseIcon: `<svg viewBox="0 0 28 24" width="26" height="22"><circle cx="14" cy="10" r="7" fill="#fbcfe8" stroke="#db2777" stroke-width="1.2"/><circle cx="11" cy="9" r="1" fill="#3b0764"/><circle cx="17" cy="9" r="1" fill="#3b0764"/><path d="M11 13 Q14 15 17 13" stroke="#db2777" stroke-width="1" fill="none"/><rect x="10" y="16" width="8" height="6" rx="2" fill="#f472b6" stroke="#db2777" stroke-width="1"/><path d="M18 12 L23 13 L18 15 Z" fill="#d97706" stroke="#78350f" stroke-width="0.8"/></svg>`,
-            marketNames: {
-                AAPL: 'MOMOKA (모모카)', MSFT: 'YUZUKI (유즈키)', TSLA: 'AIRI (아이리)', AMZN: 'HINATA (히나타)', NVDA: 'RIN (린)',
-                '005930': 'SAKURA GROUP', '000660': 'MIRAI STAGE', '035420': 'STARLIGHT PROD', '035720': 'DREAM FACTORY', '005380': 'MELODY ENT',
-                BTC: 'SUPER FEVER COIN', ETH: 'LIGHTSTICK COIN', SOL: 'ENCORE COIN', DOGE: 'MASCOT COIN', XRP: 'IDOL POINT',
-                WEMIX: 'FANCLUB TOKEN', KLAY: 'CHEER TOKEN', ICX: 'GLOWSTICK ICE', BORA: 'CONCERT PASS', MED: 'VOICE TICKET'
-            }
-        },
-        {
-            id: 'k-illegal', name: 'K-ILLEGAL SPORTSBOOK', price: 100000000000,
-            swatches: ['#000000', '#FFFF00', '#FF0000', '#C0C0C0'],
-            labels: { mineCardName: '지뢰 징검다리', leaderboardTitle: '고액 배터 전광판' },
-            banner: '먹튀 검증 완료 ✓ · 첫충 30% 무한 지급'
-        },
-        {
-            id: 'nk-propaganda', name: 'RED STAR', price: 100000000000,
-            swatches: ['#1F2937', '#DC2626', '#FDE047', '#4B5563'],
-            labels: { balanceTitle: '공동 자산', slotsCardName: '생산력 슬롯', mineCardName: '지뢰 제거 작업' },
-            jackpotText: '인민의 위대한 승리!'
-        }
-    ];
-
-    let ownedThemes = ['classic'];
-    let equippedTheme = 'classic';
-
-    function getTheme(id) { return THEMES.find(t => t.id === id) || null; }
-
-    function applyTheme(id) {
-        equippedTheme = id;
-        document.body.className = id === 'classic' ? '' : ('theme-' + id);
-        const theme = getTheme(id);
-        const labels = (theme && theme.labels) || {};
-        const icons = (theme && theme.icons) || {};
-
-        document.getElementById('balanceTitleLabel').innerText = labels.balanceTitle || 'BALANCE';
-        document.getElementById('leaderboardTitle').innerText = '🏆 ' + (labels.leaderboardTitle || 'HIGH SCORE');
-        document.getElementById('mineCardName').innerText = labels.mineCardName || 'MINES';
-        document.getElementById('slotsCardName').innerText = labels.slotsCardName || 'SLOTS';
-        document.getElementById('blackjackCardName').innerText = labels.blackjackCardName || 'BLACKJACK';
-        document.getElementById('horseCardName').innerText = labels.horseCardName || 'HORSE RACE';
-        document.getElementById('rouletteCardName').innerText = labels.rouletteCardName || 'ROULETTE';
-        document.getElementById('marketCardName').innerText = labels.marketCardName || 'MARKET';
-
-        document.getElementById('mineCardIcon').innerText = icons.mine || '💣';
-        document.getElementById('blackjackCardIcon').innerText = icons.blackjack || '🃏';
-        document.getElementById('slotsCardIcon').innerText = icons.slots || '🎰';
-        document.getElementById('horseCardIcon').innerText = icons.horse || '🐎';
-        document.getElementById('rouletteCardIcon').innerText = icons.roulette || '🔴';
-        document.getElementById('marketCardIcon').innerText = icons.market || '📈';
-
-        const bannerEl = document.getElementById('themeBanner');
-        if (theme && theme.banner) {
-            bannerEl.innerText = theme.banner;
-            bannerEl.classList.remove('hidden');
-        } else {
-            bannerEl.classList.add('hidden');
-        }
-
-        // 이미 열려있는 게임 화면이 있다면 테마가 바뀐 즉시 다시 그려서 심볼/이름을 갱신
-        if (typeof slotGridData !== 'undefined' && slotGridData.length) renderSlotGrid();
-        if (typeof renderMarketLists === 'function' && currentView === 'market') renderMarketLists();
-        if (typeof renderHorsePicks === 'function' && currentView === 'horse' && !raceInProgress) {
-            renderHorsePicks(); renderHorseTrack();
-        }
-    }
-
-    // 마인즈/슬롯 등 승리 메시지에 테마 잭팟 문구를 살짝 얹어주는 헬퍼
-    function themedJackpotSuffix() {
-        const theme = getTheme(equippedTheme);
-        return (theme && theme.jackpotText) ? ` ${theme.jackpotText}` : '';
-    }
-
-    function themedMineIcon(type) {
-        const theme = getTheme(equippedTheme);
-        return (theme && theme.mineIcons && theme.mineIcons[type]) ? theme.mineIcons[type] : null;
-    }
-
-    // ===== Web Audio API 신스 사운드 (외부 mp3 없이 오실레이터로 직접 합성) =====
-    // 사이버펑크 테마가 장착되어 있을 때만 소리를 냄. 그 외 테마는 무음(no-op).
-    let cyberAudioCtx = null;
-    function getCyberAudioCtx() {
-        if (!cyberAudioCtx) {
-            const AC = window.AudioContext || window.webkitAudioContext;
-            if (!AC) return null;
-            cyberAudioCtx = new AC();
-        }
-        if (cyberAudioCtx.state === 'suspended') cyberAudioCtx.resume();
-        return cyberAudioCtx;
-    }
-    function playCyberSynth(type) {
-        if (equippedTheme !== 'cyberpunk' && equippedTheme !== 'medieval' && equippedTheme !== 'anime') return;
-        try {
-            const ctx = getCyberAudioCtx();
-            if (!ctx) return;
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
-            const now = ctx.currentTime;
-            if (equippedTheme === 'anime') {
-                // 애니메 테마: 반짝이는 벨 클릭음, 상승 아르페지오 승리음, 통통 튀는 코믹 실패음
-                if (type === 'click') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(1568, now);
-                    osc.frequency.setValueAtTime(2093, now + 0.05);
-                    gain.gain.setValueAtTime(0.05, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-                    osc.start(now); osc.stop(now + 0.12);
-                } else if (type === 'win') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(1046.5, now);
-                    osc.frequency.setValueAtTime(1318.5, now + 0.09);
-                    osc.frequency.setValueAtTime(1568, now + 0.18);
-                    osc.frequency.setValueAtTime(2093, now + 0.27);
-                    gain.gain.setValueAtTime(0.07, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-                    osc.start(now); osc.stop(now + 0.5);
-                } else if (type === 'fail') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(500, now);
-                    osc.frequency.setValueAtTime(300, now + 0.08);
-                    osc.frequency.setValueAtTime(400, now + 0.16);
-                    osc.frequency.setValueAtTime(150, now + 0.26);
-                    gain.gain.setValueAtTime(0.08, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-                    osc.start(now); osc.stop(now + 0.4);
-                }
-                return;
-            }
-            if (equippedTheme === 'medieval') {
-                // 중세 테마: 류트 풍 클릭음, 팡파레 풍 승리음, 둔탁한 실패음
-                if (type === 'click') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(660, now);
-                    osc.frequency.exponentialRampToValueAtTime(440, now + 0.1);
-                    gain.gain.setValueAtTime(0.06, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-                    osc.start(now); osc.stop(now + 0.15);
-                } else if (type === 'win') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(392, now);
-                    osc.frequency.setValueAtTime(523.25, now + 0.12);
-                    osc.frequency.setValueAtTime(659.25, now + 0.24);
-                    gain.gain.setValueAtTime(0.08, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-                    osc.start(now); osc.stop(now + 0.5);
-                } else if (type === 'fail') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(140, now);
-                    osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
-                    gain.gain.setValueAtTime(0.1, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-                    osc.start(now); osc.stop(now + 0.35);
-                }
-                return;
-            }
-            if (type === 'click') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(1200, now);
-                osc.frequency.exponentialRampToValueAtTime(500, now + 0.08);
-                gain.gain.setValueAtTime(0.05, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
-                osc.start(now); osc.stop(now + 0.1);
-            } else if (type === 'win') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(220, now);
-                osc.frequency.exponentialRampToValueAtTime(1046, now + 0.28);
-                gain.gain.setValueAtTime(0.06, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
-                osc.start(now); osc.stop(now + 0.32);
-            } else if (type === 'fail') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(720, now);
-                osc.frequency.exponentialRampToValueAtTime(60, now + 0.35);
-                gain.gain.setValueAtTime(0.07, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-                osc.start(now); osc.stop(now + 0.4);
-            }
-        } catch (e) { /* Web Audio 사용 불가 환경에서는 조용히 무시 */ }
-    }
-
-    async function syncThemeToDB() {
-        if (!currentUid) return;
-        await db.ref('users/' + currentUid).update({ ownedThemes, equippedTheme });
-    }
-
-    function renderThemeShop() {
-        const list = document.getElementById('themeShopList');
-        list.innerHTML = THEMES.map(theme => {
-            const owned = ownedThemes.includes(theme.id);
-            const swatchHtml = `<div class="theme-swatch">${theme.swatches.map(c => `<span style="background:${c};"></span>`).join('')}</div>`;
-            const actionHtml = owned
-                ? `<span style="color:var(--gold); font-family:'Press Start 2P', monospace; font-size:0.6rem;">OWNED</span>`
-                : `<button class="btn-main pixel-btn" onclick="buyTheme('${theme.id}')">BUY</button>`;
-            return `
-            <div class="market-row">
-                <div class="market-info">
-                    <div class="market-name">${theme.name}</div>
-                    <div class="market-price">${theme.price.toLocaleString()} kee</div>
-                    ${swatchHtml}
-                </div>
-                <div class="market-actions">${actionHtml}</div>
-            </div>`;
-        }).join('');
-    }
-
-    window.buyTheme = async function(themeId) {
-        if (ownedThemes.includes(themeId)) return;
-        const theme = getTheme(themeId);
-        if (!theme) return;
-        if (balance < theme.price) return alert('Not enough coins!');
-        balance -= theme.price;
-        ownedThemes.push(themeId);
-        await syncBalanceToDB();
-        await syncThemeToDB();
-        updateBalanceUI();
-        renderThemeShop();
-    };
-
-    // ===== Profile (테마 장착 + 계정 탈퇴) =====
-    window.openProfileModal = function() {
-        document.getElementById('profileUsername').innerText = currentUser;
-        renderProfileThemes();
-        document.getElementById('profileModal').classList.remove('hidden');
-    };
-
-    window.closeProfileModal = function() {
-        document.getElementById('profileModal').classList.add('hidden');
-    };
-
-    function renderProfileThemes() {
-        const list = document.getElementById('profileThemeList');
-        const allOwned = ['classic', ...ownedThemes.filter(id => id !== 'classic')];
-        list.innerHTML = allOwned.map(id => {
-            const theme = getTheme(id);
-            const name = theme ? theme.name : 'CLASSIC ARCADE';
-            const swatches = theme ? theme.swatches : ['#181825', '#F38BA8', '#89B4FA', '#F9E2AF'];
-            const active = equippedTheme === id;
-            return `
-            <div class="market-row" style="${active ? 'border-color:var(--gold);' : ''}">
-                <div class="market-info">
-                    <div class="market-name">${name}</div>
-                    <div class="theme-swatch">${swatches.map(c => `<span style="background:${c};"></span>`).join('')}</div>
-                </div>
-                <div class="market-actions">
-                    ${active
-                        ? `<span style="color:var(--gold); font-family:'Press Start 2P', monospace; font-size:0.6rem;">EQUIPPED</span>`
-                        : `<button class="btn-main pixel-btn" onclick="equipTheme('${id}')">EQUIP</button>`}
-                </div>
-            </div>`;
-        }).join('');
-    }
-
-    window.equipTheme = async function(themeId) {
-        applyTheme(themeId);
-        await syncThemeToDB();
-        renderProfileThemes();
-    };
-
-    async function syncBalanceToDB() {
-        if (!currentUid) return;
-        await db.ref('users/' + currentUid).update({ balance });
-    }
-
-    function updateBalanceUI() {
-        UI.balanceDisplay.innerText = `${balance.toLocaleString()}`;
-    }
-
-    // 잔액은 이제 DB를 실시간으로 구독해서 로컬 변수를 항상 최신 상태로 유지한다.
-    // (이 리스너가 없으면, 다른 기기/탭에 남아있던 낡은 balance 값으로 syncBalanceToDB()가
-    //  덮어써서 방금 받은 송금액이 사라지는 문제가 생김)
-    let balanceSyncRef = null;
-    function startBalanceSync() {
-        stopBalanceSync();
-        balanceSyncRef = db.ref('users/' + currentUid + '/balance');
-        balanceSyncRef.on('value', (snapshot) => {
-            const val = snapshot.val();
-            if (typeof val === 'number') {
-                balance = val;
-                updateBalanceUI();
-            }
-        });
-    }
-    function stopBalanceSync() {
-        if (balanceSyncRef) { balanceSyncRef.off(); balanceSyncRef = null; }
-    }
-
-    let allUsersCache = [];
-
-    function startLeaderboardSync() {
-        db.ref('users').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (!data) return;
-            const userArray = Object.keys(data).map(uid => ({
-                uid, name: data[uid].username, balance: data[uid].balance
-            })).sort((a, b) => b.balance - a.balance);
-            allUsersCache = userArray;
-
-            UI.rankList.innerHTML = '';
-            userArray.forEach((user, index) => {
-                const li = document.createElement('li');
-                li.className = `rank-item ${user.uid === currentUid ? 'me' : ''}`;
-                let rankIcon = `#${index + 1}`;
-                if (index === 0) rankIcon = '🥇'; if (index === 1) rankIcon = '🥈'; if (index === 2) rankIcon = '🥉';
-                li.innerHTML = `<span class="rank-name">${rankIcon} ${user.name}</span><span class="rank-money">${user.balance.toLocaleString()} kee</span>`;
-                UI.rankList.appendChild(li);
-            });
-
-            if (!document.getElementById('sendModal').classList.contains('hidden')) renderSendUserList();
-        }, (error) => {
-            console.error('Leaderboard sync error:', error);
-            UI.rankList.innerHTML = '<li style="text-align:center; color:var(--pink); margin-top:20px; font-family:VT323,monospace;">Leaderboard unavailable (check DB rules)</li>';
+    function normalizeUserState(raw) {
+        return Object.assign(createNewUserState(raw.nickname || currentUsername), raw, {
+            portfolio: raw.portfolio || {},
+            realEstate: Object.assign({ merchantHQ:false, knightTerritory:false, academyHQ:false, lordTitle:false }, raw.realEstate || {})
         });
     }
 
     // ==========================================
-    // 화면 전환 (로비 <-> 게임)
+    // 실시간 동기화 (다른 기기에서 접속 중이어도 골드가 낡은 값으로 덮어써지지 않도록)
     // ==========================================
-    window.showView = function(view) {
-        currentView = view;
-        document.getElementById('lobbyView').classList.toggle('hidden', view !== 'lobby');
-        document.getElementById('minesView').classList.toggle('hidden', view !== 'mines');
-        document.getElementById('blackjackView').classList.toggle('hidden', view !== 'blackjack');
-        document.getElementById('slotsView').classList.toggle('hidden', view !== 'slots');
-        document.getElementById('horseView').classList.toggle('hidden', view !== 'horse');
-        document.getElementById('rouletteView').classList.toggle('hidden', view !== 'roulette');
-        document.getElementById('marketView').classList.toggle('hidden', view !== 'market');
-        document.getElementById('shopView').classList.toggle('hidden', view !== 'shop');
-        if (view === 'slots') initSlotGrid();
-        if (view === 'horse') initHorseView();
-        if (view === 'roulette') initRouletteView();
-        if (view === 'market') initMarketView();
-        if (view === 'shop') { renderShop(); renderThemeShop(); }
-    };
-
-    window.exitToLobby = function(from) {
-        if (from === 'mines' && state.isPlaying) return alert('Game in progress. Cash out or finish before leaving.');
-        if (from === 'blackjack' && bjState.isPlaying) return alert('Round in progress. Finish before leaving.');
-        if (from === 'horse' && raceInProgress) return alert('Race in progress. Wait for it to finish.');
-        if (from === 'roulette' && rouletteSpinning) return alert('Spin in progress. Wait for it to finish.');
-        showView('lobby');
-    };
-
-    // ==========================================
-    // 마인즈 게임
-    // ==========================================
-    function combination(n, k) {
-        if (k < 0 || k > n) return 0;
-        if (k === 0 || k === n) return 1;
-        let res = 1; for (let i = 1; i <= k; i++) res = res * (n - i + 1) / i; return res;
-    }
-    function calculateMultiplier(gemsRevealed, totalMines) {
-        if (gemsRevealed === 0) return 1.0;
-        const prob = combination(GRID_SIZE - totalMines, gemsRevealed) / combination(GRID_SIZE, gemsRevealed);
-        return Math.max(1.01, Math.floor(((1 / prob) * 0.99) * 100) / 100);
-    }
-    window.handleActionButton = function() { state.isPlaying ? cashout() : startGame(); };
-
-    async function startGame() {
-        const bet = parseInt(UI.betInput.value);
-        const mineCount = parseInt(UI.minesSelect.value);
-        if (isNaN(bet) || bet <= 0) return alert('Enter a valid amount.');
-        if (bet > balance) return alert('Not enough coins!');
-
-        const mines = [];
-        while (mines.length < mineCount) {
-            const rand = Math.floor(Math.random() * GRID_SIZE);
-            if (!mines.includes(rand)) mines.push(rand);
-        }
-        balance -= bet;
-        await syncBalanceToDB();
-        state = { ...state, betAmount: bet, mineCount, mines, revealed: [], currentMultiplier: 1.0, isPlaying: true, gameOver: false };
-        updateMinesUI(); renderBoard(); updateBalanceUI();
-    }
-
-    window.handleTileClick = async function(index) {
-        if (!state.isPlaying || state.revealed.includes(index)) return;
-        playCyberSynth('click');
-        state.revealed.push(index);
-        if (state.mines.includes(index)) {
-            state.isPlaying = false; state.gameOver = true;
-            playCyberSynth('fail');
-            UI.statusBox.innerHTML = `<span class="message lose">💥 Lost ${state.betAmount.toLocaleString()} kee!</span>`;
-        } else {
-            state.currentMultiplier = calculateMultiplier(state.revealed.length, state.mineCount);
-            if (state.revealed.length === GRID_SIZE - state.mineCount) { await cashout(); return; }
-        }
-        updateMinesUI(); renderBoard();
-    };
-
-    async function cashout() {
-        if (!state.isPlaying) return;
-        const winAmount = Math.floor(state.betAmount * state.currentMultiplier);
-        balance += winAmount;
-        await syncBalanceToDB();
-        state.isPlaying = false;
-        playCyberSynth('win');
-        UI.statusBox.innerHTML = `<span class="message win">🎉 Won ${winAmount.toLocaleString()} kee!</span>`;
-        updateMinesUI(); renderBoard(); updateBalanceUI();
-    }
-
-    function updateMinesUI() {
-        updateBalanceUI();
-        if (state.isPlaying) {
-            UI.betInput.disabled = true; UI.minesSelect.disabled = true;
-            const currentWin = Math.floor(state.betAmount * state.currentMultiplier);
-            UI.actionBtn.innerText = `CASHOUT (${currentWin.toLocaleString()})`;
-            const nextMult = calculateMultiplier(state.revealed.length + 1, state.mineCount);
-            UI.statusBox.innerHTML = `<div class="multiplier">${state.currentMultiplier.toFixed(2)}x</div><div class="next-multiplier">NEXT: ${nextMult.toFixed(2)}x</div>`;
-        } else {
-            UI.betInput.disabled = false; UI.minesSelect.disabled = false;
-            UI.actionBtn.innerText = 'GAME START';
-            if (!state.gameOver && state.revealed.length === 0) UI.statusBox.innerHTML = `<span class="next-multiplier">READY</span>`;
-        }
-    }
-
-    function renderBoard() {
-        UI.gridEl.innerHTML = '';
-        for (let i = 0; i < GRID_SIZE; i++) {
-            const tile = document.createElement('div');
-            tile.classList.add('tile');
-            const isRevealed = state.revealed.includes(i);
-            const isMine = state.mines.includes(i);
-            if (!state.isPlaying && !state.gameOver) { /* 빈칸 */ }
-            else if (isRevealed) {
-                tile.classList.add('revealed');
-                if (isMine) { tile.classList.add('mine'); tile.innerHTML = themedMineIcon('mine') || '💣'; }
-                else { tile.classList.add('gem'); tile.innerHTML = themedMineIcon('gem') || '💎'; }
-            } else if (state.gameOver) {
-                tile.classList.add('revealed');
-                if (isMine) { tile.classList.add('mine'); tile.innerHTML = themedMineIcon('mine') || '💣'; }
-                else { tile.style.opacity = '0.3'; }
+    function startLiveSync() {
+        stopLiveSync();
+        goldSyncRef = db.ref(DB_ROOT + '/' + currentUid + '/gold');
+        goldSyncRef.on('value', (snap) => {
+            const v = snap.val();
+            if (typeof v === 'number' && userState) {
+                userState.gold = v;
+                renderHeader();
             }
-            tile.addEventListener('click', () => window.handleTileClick(i));
-            UI.gridEl.appendChild(tile);
-        }
+        });
     }
-    renderBoard();
-
-    // ==========================================
-    // 블랙잭 게임
-    // ==========================================
-    const SUITS = ['♠', '♥', '♦', '♣'];
-    const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-
-    function createShuffledDeck() {
-        const deck = [];
-        for (const s of SUITS) for (const r of RANKS) deck.push({ suit: s, rank: r });
-        for (let i = deck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [deck[i], deck[j]] = [deck[j], deck[i]];
-        }
-        return deck;
+    function stopLiveSync() {
+        if (goldSyncRef) { goldSyncRef.off(); goldSyncRef = null; }
     }
 
-    function cardValue(card) {
-        if (card.rank === 'A') return 11;
-        if (['J','Q','K'].includes(card.rank)) return 10;
-        return parseInt(card.rank);
-    }
-
-    function handValue(hand) {
-        let total = hand.reduce((sum, c) => sum + cardValue(c), 0);
-        let aces = hand.filter(c => c.rank === 'A').length;
-        while (total > 21 && aces > 0) { total -= 10; aces--; }
-        return total;
-    }
-
-    function renderCard(card, hidden = false) {
-        if (hidden) return `<div class="playing-card back"></div>`;
-        const isRed = card.suit === '♥' || card.suit === '♦';
-        return `<div class="playing-card ${isRed ? 'red' : 'black'}">${card.rank}<span>${card.suit}</span></div>`;
-    }
-
-    function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
-
-    function updateBjValues() {
-        document.getElementById('bjPlayerValue').innerText = bjState.playerHand.length ? `(${handValue(bjState.playerHand)})` : '';
-        document.getElementById('bjDealerValue').innerText = bjState.dealerHand.length ? `(${bjState.revealDealer ? handValue(bjState.dealerHand) : '?'})` : '';
-    }
-
-    async function dealCardAnimated(containerId, card, hidden = false) {
-        const container = document.getElementById(containerId);
-        const el = document.createElement('div');
-        if (hidden) {
-            el.className = 'playing-card back deal-in';
-        } else {
-            const isRed = card.suit === '♥' || card.suit === '♦';
-            el.className = `playing-card ${isRed ? 'red' : 'black'} deal-in`;
-            el.innerHTML = `${card.rank}<span>${card.suit}</span>`;
-        }
-        container.appendChild(el);
-        await sleep(300);
-    }
-
-    window.bjDeal = async function() {
-        const bet = parseInt(document.getElementById('bjBetInput').value);
-        if (isNaN(bet) || bet <= 0) return alert('Enter a valid amount.');
-        if (bet > balance) return alert('Not enough coins!');
-
-        balance -= bet;
-        await syncBalanceToDB(); updateBalanceUI();
-
-        bjState.deck = createShuffledDeck();
-        bjState.playerHand = [];
-        bjState.dealerHand = [];
-        bjState.bet = bet;
-        bjState.isPlaying = true;
-        bjState.revealDealer = false;
-
-        document.getElementById('bjDealBtn').disabled = true;
-        document.getElementById('bjBetInput').disabled = true;
-        document.getElementById('bjHitBtn').disabled = true;
-        document.getElementById('bjStandBtn').disabled = true;
-        document.getElementById('bjResult').innerText = '';
-        document.getElementById('bjPlayerCards').innerHTML = '';
-        document.getElementById('bjDealerCards').innerHTML = '';
-        updateBjValues();
-
-        const dealPlan = [
-            { hand: bjState.playerHand, container: 'bjPlayerCards', hidden: false },
-            { hand: bjState.dealerHand, container: 'bjDealerCards', hidden: false },
-            { hand: bjState.playerHand, container: 'bjPlayerCards', hidden: false },
-            { hand: bjState.dealerHand, container: 'bjDealerCards', hidden: true }
-        ];
-        for (const step of dealPlan) {
-            const card = bjState.deck.pop();
-            step.hand.push(card);
-            await dealCardAnimated(step.container, card, step.hidden);
-            updateBjValues();
-        }
-
-        document.getElementById('bjHitBtn').disabled = false;
-        document.getElementById('bjStandBtn').disabled = false;
-
-        if (handValue(bjState.playerHand) === 21) { await bjStand(); }
-    };
-
-    window.bjHit = async function() {
-        if (!bjState.isPlaying) return;
-        const card = bjState.deck.pop();
-        bjState.playerHand.push(card);
-        await dealCardAnimated('bjPlayerCards', card, false);
-        updateBjValues();
-        const val = handValue(bjState.playerHand);
-        if (val > 21) { bjEndRound('bust'); }
-        else if (val === 21) { bjStand(); }
-    };
-
-    window.bjStand = async function() {
-        if (!bjState.isPlaying) return;
-        bjState.revealDealer = true;
-        renderBjTable();
-        while (handValue(bjState.dealerHand) < 17) {
-            await sleep(450);
-            const card = bjState.deck.pop();
-            bjState.dealerHand.push(card);
-            await dealCardAnimated('bjDealerCards', card, false);
-            updateBjValues();
-        }
-
-        const playerVal = handValue(bjState.playerHand);
-        const dealerVal = handValue(bjState.dealerHand);
-        const playerBJ = playerVal === 21 && bjState.playerHand.length === 2;
-        const dealerBJ = dealerVal === 21 && bjState.dealerHand.length === 2;
-
-        if (dealerVal > 21) return bjEndRound('win');
-        if (playerBJ && !dealerBJ) return bjEndRound('blackjack');
-        if (dealerBJ && !playerBJ) return bjEndRound('lose');
-        if (playerVal > dealerVal) return bjEndRound('win');
-        if (playerVal < dealerVal) return bjEndRound('lose');
-        return bjEndRound('push');
-    };
-
-    async function bjEndRound(result) {
-        bjState.isPlaying = false;
-        let winAmount = 0;
-        let msg = '';
-        if (result === 'blackjack') { winAmount = Math.floor(bjState.bet * 2.5); msg = `🎉 Blackjack! Won ${winAmount.toLocaleString()} kee!`; }
-        else if (result === 'win') { winAmount = bjState.bet * 2; msg = `🎉 Win! Won ${winAmount.toLocaleString()} kee!`; }
-        else if (result === 'push') { winAmount = bjState.bet; msg = `🤝 Push (bet returned)`; }
-        else if (result === 'bust') { winAmount = 0; msg = `💥 Bust! Lost ${bjState.bet.toLocaleString()} kee`; }
-        else { winAmount = 0; msg = `😢 Lose! Lost ${bjState.bet.toLocaleString()} kee`; }
-
-        balance += winAmount;
-        await syncBalanceToDB(); updateBalanceUI();
-        playCyberSynth(winAmount > bjState.bet ? 'win' : (winAmount === bjState.bet ? 'click' : 'fail'));
-
-        document.getElementById('bjResult').innerText = msg;
-        document.getElementById('bjResult').style.color = winAmount > bjState.bet ? 'var(--gold)' : (winAmount === bjState.bet ? 'var(--text-muted)' : 'var(--pink)');
-        document.getElementById('bjHitBtn').disabled = true;
-        document.getElementById('bjStandBtn').disabled = true;
-        document.getElementById('bjDealBtn').disabled = false;
-        document.getElementById('bjBetInput').disabled = false;
-        renderBjTable();
-    }
-
-    function renderBjTable() {
-        const dealerVal = bjState.revealDealer ? handValue(bjState.dealerHand) : '?';
-        document.getElementById('bjDealerValue').innerText = bjState.dealerHand.length ? `(${dealerVal})` : '';
-        document.getElementById('bjPlayerValue').innerText = bjState.playerHand.length ? `(${handValue(bjState.playerHand)})` : '';
-
-        document.getElementById('bjDealerCards').innerHTML = bjState.dealerHand.map((c, i) =>
-            renderCard(c, i === 1 && !bjState.revealDealer)
-        ).join('');
-        document.getElementById('bjPlayerCards').innerHTML = bjState.playerHand.map(c => renderCard(c)).join('');
+    async function syncUserToDB(patch) {
+        if (!currentUid || !userState) return;
+        Object.assign(userState, patch);
+        await db.ref(DB_ROOT + '/' + currentUid).update(patch);
     }
 
     // ==========================================
-    // 슬롯머신 게임 (3행 5열, 8개 페이라인: 가로3 + 세로5)
+    // 패시브 정산: 예금이자 / 영지세 / 대출이자 / 배당금 (경과 실시간 기준)
     // ==========================================
-    const SLOT_SYMBOLS = [
-        { symbol: '🍒', weight: 30, pay: { 3: 1, 4: 2, 5: 3 } },
-        { symbol: '🍋', weight: 24, pay: { 3: 1, 4: 2, 5: 4 } },
-        { symbol: '🔔', weight: 18, pay: { 3: 2, 4: 4, 5: 8 } },
-        { symbol: '⭐', weight: 12, pay: { 3: 3, 4: 6, 5: 12 } },
-        { symbol: '💎', weight: 8,  pay: { 3: 5, 4: 10, 5: 20 } },
-        { symbol: '7️⃣', weight: 4,  pay: { 3: 8, 4: 16, 5: 32 } }
-    ];
-    const TOTAL_WEIGHT = SLOT_SYMBOLS.reduce((s, x) => s + x.weight, 0);
+    async function applyPassiveTick() {
+        if (!userState) return;
+        const now = Date.now();
+        const last = userState.lastTickAt || now;
+        const elapsedMin = (now - last) / 60000;
+        if (elapsedMin <= 0) return;
 
-    // 각 페이라인은 (row, col) 좌표 배열로 정의 (길이가 달라도 되도록 일반화)
-    const PAYLINES = [
-        { name: 'TOP',    cells: [[0,0],[0,1],[0,2],[0,3],[0,4]] },
-        { name: 'MID',    cells: [[1,0],[1,1],[1,2],[1,3],[1,4]] },
-        { name: 'BOTTOM', cells: [[2,0],[2,1],[2,2],[2,3],[2,4]] },
-        { name: 'COL1',   cells: [[0,0],[1,0],[2,0]] },
-        { name: 'COL2',   cells: [[0,1],[1,1],[2,1]] },
-        { name: 'COL3',   cells: [[0,2],[1,2],[2,2]] },
-        { name: 'COL4',   cells: [[0,3],[1,3],[2,3]] },
-        { name: 'COL5',   cells: [[0,4],[1,4],[2,4]] }
-    ];
+        let gold = userState.gold;
+        let unpaidInterest = userState.loanUnpaidInterest || 0;
+        const principal = userState.loanPrincipal || 0;
 
-    function pickRandomSymbol() {
-        let r = Math.random() * TOTAL_WEIGHT;
-        for (const s of SLOT_SYMBOLS) {
-            if (r < s.weight) return s.symbol;
-            r -= s.weight;
-        }
-        return SLOT_SYMBOLS[0].symbol;
-    }
+        // 1) 예금 이자 (분당 0.5%, 복리)
+        gold *= Math.pow(1 + 0.005, elapsedMin);
 
-    // 테마가 지정한 아이콘 세트가 있으면 화면 표시용 글리프만 바꿔치기 (당첨 판정은 항상 원본 심볼 기준)
-    function themedSlotIcon(baseSymbol) {
-        const theme = getTheme(equippedTheme);
-        if (!theme || !theme.slotIcons) return baseSymbol;
-        const idx = SLOT_SYMBOLS.findIndex(s => s.symbol === baseSymbol);
-        return (idx >= 0 && theme.slotIcons[idx]) ? theme.slotIcons[idx] : baseSymbol;
-    }
-
-    let slotGridData = [];
-
-    function initSlotGrid() {
-        if (slotGridData.length) { renderSlotGrid(); return; }
-        slotGridData = [];
-        for (let row = 0; row < 3; row++) {
-            const r = [];
-            for (let col = 0; col < 5; col++) r.push(pickRandomSymbol());
-            slotGridData.push(r);
-        }
-        renderSlotGrid();
-    }
-
-    function renderSlotGrid(winCells = []) {
-        const gridEl = document.getElementById('slotGrid');
-        gridEl.innerHTML = '';
-        const winSet = new Set(winCells.map(c => `${c.row}-${c.col}`));
-        for (let row = 0; row < 3; row++) {
-            for (let col = 0; col < 5; col++) {
-                const cell = document.createElement('div');
-                cell.classList.add('slot-cell');
-                if (winSet.has(`${row}-${col}`)) cell.classList.add('payline');
-                cell.innerHTML = themedSlotIcon(slotGridData[row][col]);
-                gridEl.appendChild(cell);
-            }
-        }
-    }
-
-    // 한 페이라인(길이 5의 심볼 배열)에서 왼쪽 정렬 여부와 상관없이
-    // 가장 긴 "연속 동일 심볼" 구간을 찾는다 (3개 이상이어야 인정)
-    function findBestRun(line) {
-        let bestLen = 0, bestSymbol = null, bestStart = 0;
-        let i = 0;
-        while (i < line.length) {
-            let j = i;
-            while (j < line.length && line[j] === line[i]) j++;
-            const runLen = j - i;
-            if (runLen > bestLen) { bestLen = runLen; bestSymbol = line[i]; bestStart = i; }
-            i = j;
-        }
-        return { len: bestLen, symbol: bestSymbol, start: bestStart };
-    }
-
-    // 8개 페이라인을 전부 검사해서, 3연속 이상 맞은 라인들을 모두 찾는다
-    function evaluateAllPaylines(grid) {
-        const wins = [];
-        for (const line of PAYLINES) {
-            const symbols = line.cells.map(([r, c]) => grid[r][c]);
-            const run = findBestRun(symbols);
-            if (run.len < 3) continue;
-            const symbolData = SLOT_SYMBOLS.find(s => s.symbol === run.symbol);
-            const multiplier = symbolData.pay[run.len] || 0;
-            if (multiplier <= 0) continue;
-            const cells = line.cells.slice(run.start, run.start + run.len).map(([r, c]) => ({ row: r, col: c }));
-            wins.push({ lineName: line.name, symbol: run.symbol, count: run.len, multiplier, cells });
-        }
-        return wins;
-    }
-
-    window.slotSpin = async function() {
-        const bet = parseInt(document.getElementById('slotBetInput').value);
-        if (isNaN(bet) || bet <= 0) return alert('Enter a valid amount.');
-        if (bet > balance) return alert('Not enough coins!');
-
-        document.getElementById('slotSpinBtn').disabled = true;
-        document.getElementById('slotResult').innerText = 'Spinning...';
-        document.getElementById('slotResult').style.color = '';
-
-        balance -= bet;
-        await syncBalanceToDB(); updateBalanceUI();
-
-        // 최종 결과를 미리 결정 (연출용, 계산은 다 멈춘 뒤에만 수행)
-        const finalGrid = [];
-
-        for (let row = 0; row < 3; row++) {
-            const r = [];
-            for (let col = 0; col < 5; col++) r.push(pickRandomSymbol());
-            finalGrid.push(r);
+        // 2) 기사단 영지 세금 수입 (분당 5,000G)
+        if (userState.realEstate.knightTerritory) {
+            gold += 5000 * elapsedMin;
         }
 
-        // 스핀 시작: 임시 랜덤 심볼로 그려서 전부 깜빡이는 상태로 시작
-        slotGridData = [];
-        for (let row = 0; row < 3; row++) {
-            const r = [];
-            for (let col = 0; col < 5; col++) r.push(pickRandomSymbol());
-            slotGridData.push(r);
-        }
-        renderSlotGrid();
-        const gridEl = document.getElementById('slotGrid');
-        Array.from(gridEl.children).forEach(c => c.classList.add('spinning'));
-
-        const colStopped = [false, false, false, false, false];
-        const flickerTimer = setInterval(() => {
-            for (let row = 0; row < 3; row++) {
-                for (let col = 0; col < 5; col++) {
-                    if (colStopped[col]) continue;
-                    const cell = gridEl.children[row * 5 + col];
-                    if (cell) cell.innerHTML = themedSlotIcon(pickRandomSymbol());
+        // 3) 배당금 (3분마다, 보유 주식 * 가격 * 배당률, 연금술 학회 보유 시 +15%)
+        let lastDividendAt = userState.lastDividendAt || now;
+        let loops = 0;
+        while (now - lastDividendAt >= 3 * 60 * 1000 && loops < 50) {
+            lastDividendAt += 3 * 60 * 1000;
+            const epoch = Math.floor(lastDividendAt / PRICE_EPOCH_MS);
+            for (const stock of STOCKS) {
+                const shares = userState.portfolio[stock.id] || 0;
+                if (shares > 0) {
+                    const price = priceAtEpoch(stock, epoch);
+                    let div = shares * price * stock.dividendRate;
+                    if (userState.realEstate.academyHQ) div *= 1.15;
+                    gold += div;
                 }
             }
-        }, 90);
-
-        // 왼쪽 컬럼부터 하나씩 순서대로 정지
-        for (let col = 0; col < 5; col++) {
-            await sleep(col === 0 ? 550 : 350);
-            colStopped[col] = true;
-            for (let row = 0; row < 3; row++) {
-                const cell = gridEl.children[row * 5 + col];
-                cell.classList.remove('spinning');
-                cell.innerHTML = themedSlotIcon(finalGrid[row][col]);
-                cell.classList.add('stopped');
-            }
+            loops++;
         }
-        clearInterval(flickerTimer);
-        slotGridData = finalGrid;
+        if (loops >= 50) lastDividendAt = now; // 너무 오래 접속 안 했던 경우 정산 루프 상한
 
-        // 다섯 줄(상단/중단/하단/V/Λ)이 모두 멈춘 뒤에만 결과 계산
-        const wins = evaluateAllPaylines(slotGridData);
-
-        if (wins.length > 0) {
-            const totalMultiplier = wins.reduce((acc, w) => acc * w.multiplier, 1);
-            const winAmount = bet * totalMultiplier;
-            const winCells = wins.flatMap(w => w.cells);
-            renderSlotGrid(winCells);
-
-            balance += winAmount;
-            await syncBalanceToDB(); updateBalanceUI();
-
-            const detail = wins.map(w => `${w.lineName} ${w.symbol}x${w.count}(x${w.multiplier})`).join(' × ');
-            const comboText = wins.length > 1 ? ` [${wins.length}-LINE COMBO!]` : '';
-            document.getElementById('slotResult').innerText = `🎉 ${detail} = TOTAL x${totalMultiplier}! WON ${winAmount.toLocaleString()} kee!${comboText}${themedJackpotSuffix()}`;
-            document.getElementById('slotResult').style.color = 'var(--gold)';
-            playCyberSynth('win');
-        } else {
-            renderSlotGrid([]);
-            document.getElementById('slotResult').innerText = `💨 LOST ${bet.toLocaleString()} kee`;
-            document.getElementById('slotResult').style.color = 'var(--pink)';
-            playCyberSynth('fail');
+        // 4) 대출 이자 발생분 계산 후, 방금 번 패시브 수입으로 먼저 자동 상환
+        if (principal > 0) {
+            const interestAccrued = principal * 0.02 * elapsedMin;
+            unpaidInterest += interestAccrued;
         }
-        document.getElementById('slotSpinBtn').disabled = false;
+        const passiveEarned = Math.max(0, gold - userState.gold);
+        if (unpaidInterest > 0 && passiveEarned > 0) {
+            const payment = Math.min(unpaidInterest, passiveEarned);
+            unpaidInterest -= payment;
+            gold -= payment;
+        }
+
+        const isLocked = unpaidInterest > 0.01;
+
+        userState.gold = gold;
+        userState.loanUnpaidInterest = unpaidInterest;
+        userState.lastTickAt = now;
+        userState.lastDividendAt = lastDividendAt;
+        userState.isLocked = isLocked;
+
+        await db.ref(DB_ROOT + '/' + currentUid).update({
+            gold, loanUnpaidInterest: unpaidInterest, lastTickAt: now, lastDividendAt, isLocked
+        });
+    }
+
+    // ==========================================
+    // 영지 효과 / 거래 수수료 / 대출 한도
+    // ==========================================
+    function tradeFeeRate() {
+        if (userState.realEstate.lordTitle) return 0;
+        if (userState.realEstate.merchantHQ) return 0.005;
+        return 0.01;
+    }
+    function grossAssets() {
+        const epoch = currentPriceEpoch();
+        let portfolioValue = 0;
+        for (const stock of STOCKS) {
+            const shares = userState.portfolio[stock.id] || 0;
+            portfolioValue += shares * priceAtEpoch(stock, epoch);
+        }
+        return userState.gold + portfolioValue;
+    }
+    function netWorth() {
+        return grossAssets() - (userState.loanPrincipal || 0) - (userState.loanUnpaidInterest || 0);
+    }
+    function maxLoanAmount() {
+        const mult = userState.realEstate.merchantHQ ? 2 : 1;
+        return grossAssets() * 3 * mult;
+    }
+    function currentTitle() {
+        if (userState.realEstate.lordTitle) return '영주 👑';
+        if (userState.realEstate.academyHQ) return '학회장';
+        if (userState.realEstate.knightTerritory) return '기사';
+        if (userState.realEstate.merchantHQ) return '상단주';
+        return '평민';
+    }
+
+    // ==========================================
+    // 주식 매매
+    // ==========================================
+    window.buyStock = async function(stockId) {
+        if (userState.isLocked) return alert('대출 이자 연체로 신규 매수가 잠겨 있습니다. 먼저 상환하세요.');
+        const qty = parseInt(document.getElementById('qty-' + stockId).value);
+        if (isNaN(qty) || qty <= 0) return alert('올바른 수량을 입력하세요.');
+        const stock = getStock(stockId);
+        const price = priceAtEpoch(stock, currentPriceEpoch());
+        const cost = price * qty * (1 + tradeFeeRate());
+        if (cost > userState.gold) return alert('골드가 부족합니다.');
+
+        userState.gold -= cost;
+        userState.portfolio[stockId] = (userState.portfolio[stockId] || 0) + qty;
+        await syncUserToDB({ gold: userState.gold, portfolio: userState.portfolio });
+        renderAll();
+    };
+
+    window.sellStock = async function(stockId) {
+        const qty = parseInt(document.getElementById('qty-' + stockId).value);
+        if (isNaN(qty) || qty <= 0) return alert('올바른 수량을 입력하세요.');
+        const owned = userState.portfolio[stockId] || 0;
+        if (qty > owned) return alert('보유 수량보다 많이 팔 수 없습니다.');
+        const stock = getStock(stockId);
+        const price = priceAtEpoch(stock, currentPriceEpoch());
+        const proceeds = price * qty * (1 - tradeFeeRate());
+
+        userState.gold += proceeds;
+        userState.portfolio[stockId] = owned - qty;
+        await syncUserToDB({ gold: userState.gold, portfolio: userState.portfolio });
+        renderAll();
     };
 
     // ==========================================
-    // 경마 (Horse Race)
+    // 고블린 대출
     // ==========================================
-    const HORSES = [
-        { name: 'H1', weight: 30 },
-        { name: 'H2', weight: 24 },
-        { name: 'H3', weight: 18 },
-        { name: 'H4', weight: 12 },
-        { name: 'H5', weight: 8 }
+    window.borrowLoan = async function() {
+        if (userState.isLocked) return alert('이자 연체 상태에서는 추가 대출이 불가능합니다.');
+        const amount = parseInt(document.getElementById('loanAmountInput').value);
+        if (isNaN(amount) || amount <= 0) return alert('올바른 금액을 입력하세요.');
+        const limit = maxLoanAmount();
+        if ((userState.loanPrincipal || 0) + amount > limit) {
+            return alert(`대출 한도(${Math.floor(limit).toLocaleString()} G)를 초과합니다.`);
+        }
+        userState.loanPrincipal = (userState.loanPrincipal || 0) + amount;
+        userState.gold += amount;
+        await syncUserToDB({ loanPrincipal: userState.loanPrincipal, gold: userState.gold });
+        renderAll();
+    };
+
+    window.repayLoan = async function() {
+        const amount = parseInt(document.getElementById('loanAmountInput').value);
+        if (isNaN(amount) || amount <= 0) return alert('올바른 금액을 입력하세요.');
+        if (amount > userState.gold) return alert('골드가 부족합니다.');
+
+        let remaining = amount;
+        let unpaidInterest = userState.loanUnpaidInterest || 0;
+        const interestPay = Math.min(unpaidInterest, remaining);
+        unpaidInterest -= interestPay;
+        remaining -= interestPay;
+
+        let principal = userState.loanPrincipal || 0;
+        const principalPay = Math.min(principal, remaining);
+        principal -= principalPay;
+        remaining -= principalPay;
+
+        userState.gold -= (amount - remaining); // 실제로 상환에 쓰인 만큼만 차감
+        userState.loanUnpaidInterest = unpaidInterest;
+        userState.loanPrincipal = principal;
+        userState.isLocked = unpaidInterest > 0.01;
+
+        await syncUserToDB({
+            gold: userState.gold, loanUnpaidInterest: unpaidInterest,
+            loanPrincipal: principal, isLocked: userState.isLocked
+        });
+        renderAll();
+    };
+
+    // ==========================================
+    // 영지 구매
+    // ==========================================
+    const ESTATES = [
+        { id:'merchantHQ', name:'대형 상단 본점', price:50000, desc:'거래 수수료 1% → 0.5% 감면, 대출 한도 2배' },
+        { id:'knightTerritory', name:'기사단 영지', price:150000, desc:'분당 5,000 G 패시브 세금 수입' },
+        { id:'academyHQ', name:'연금술 학회 본부', price:300000, desc:'배당금 수입 +15%' },
+        { id:'lordTitle', name:'왕국 영주 직위', price:1000000, desc:'거래 수수료 완전 면제 + 최고 명예 칭호' }
     ];
-    const HORSE_TOTAL_WEIGHT = HORSES.reduce((s, h) => s + h.weight, 0);
-    HORSES.forEach(h => { h.multiplier = Math.max(1.2, Math.round((HORSE_TOTAL_WEIGHT / h.weight) * 0.93 * 10) / 10); });
 
-    let selectedHorse = 0;
-    let raceInProgress = false;
-
-    function themedHorseIcon() {
-        const theme = getTheme(equippedTheme);
-        return (theme && theme.horseIcon) ? theme.horseIcon : '🐎';
-    }
-
-    function initHorseView() {
-        renderHorsePicks();
-        renderHorseTrack();
-    }
-
-    function renderHorsePicks() {
-        const sel = document.getElementById('horseSelect');
-        const icon = themedHorseIcon();
-        sel.innerHTML = HORSES.map((h, i) =>
-            `<div class="horse-pick ${i === selectedHorse ? 'active' : ''}" data-i="${i}">${icon} ${h.name}<br>x${h.multiplier}</div>`
-        ).join('');
-        Array.from(sel.children).forEach(el => {
-            el.onclick = () => {
-                if (raceInProgress) return;
-                selectedHorse = parseInt(el.dataset.i);
-                renderHorsePicks();
-            };
-        });
-    }
-
-    function renderHorseTrack() {
-        const track = document.getElementById('horseTrack');
-        const icon = themedHorseIcon();
-        track.innerHTML = HORSES.map((h, i) =>
-            `<div class="horse-lane"><span class="flag">🏁</span><div class="horse-emoji" id="horse-${i}">${icon}</div></div>`
-        ).join('');
-    }
-
-    window.horseRace = async function() {
-        if (raceInProgress) return;
-        const bet = parseInt(document.getElementById('horseBetInput').value);
-        if (isNaN(bet) || bet <= 0) return alert('Enter a valid amount.');
-        if (bet > balance) return alert('Not enough coins!');
-
-        raceInProgress = true;
-        document.getElementById('horseRaceBtn').disabled = true;
-        document.getElementById('horseResult').innerText = '';
-        balance -= bet;
-        await syncBalanceToDB(); updateBalanceUI();
-
-        // 가중치 기반으로 승자를 먼저 결정
-        let r = Math.random() * HORSE_TOTAL_WEIGHT;
-        let winnerIdx = 0;
-        for (let i = 0; i < HORSES.length; i++) {
-            if (r < HORSES[i].weight) { winnerIdx = i; break; }
-            r -= HORSES[i].weight;
-        }
-
-        renderHorseTrack();
-        await sleep(50);
-
-        const durations = HORSES.map((_, i) => i === winnerIdx ? 2.2 : 2.5 + Math.random() * 0.9);
-        HORSES.forEach((_, i) => {
-            const el = document.getElementById(`horse-${i}`);
-            el.classList.add('running');
-            el.style.transition = `left ${durations[i].toFixed(2)}s cubic-bezier(.3,.6,.3,1)`;
-        });
-        requestAnimationFrame(() => {
-            HORSES.forEach((_, i) => {
-                document.getElementById(`horse-${i}`).style.left = 'calc(100% - 40px)';
-            });
-        });
-
-        await sleep(Math.max(...durations) * 1000 + 250);
-        HORSES.forEach((_, i) => document.getElementById(`horse-${i}`).classList.remove('running'));
-
-        const resultEl = document.getElementById('horseResult');
-        if (winnerIdx === selectedHorse) {
-            const winAmount = Math.floor(bet * HORSES[winnerIdx].multiplier);
-            balance += winAmount;
-            await syncBalanceToDB(); updateBalanceUI();
-            resultEl.innerText = `🏆 ${HORSES[winnerIdx].name} WINS! +${winAmount.toLocaleString()}`;
-            resultEl.style.color = 'var(--gold)';
-            playCyberSynth('win');
-        } else {
-            resultEl.innerText = `🏁 ${HORSES[winnerIdx].name} WINS - LOST ${bet.toLocaleString()}`;
-            resultEl.style.color = 'var(--pink)';
-            playCyberSynth('fail');
-        }
-
-        raceInProgress = false;
-        document.getElementById('horseRaceBtn').disabled = false;
+    window.buyEstate = async function(estateId) {
+        if (userState.isLocked) return alert('대출 이자 연체로 영지 구매가 잠겨 있습니다. 먼저 상환하세요.');
+        const estate = ESTATES.find(e => e.id === estateId);
+        if (userState.realEstate[estateId]) return;
+        if (userState.gold < estate.price) return alert('골드가 부족합니다.');
+        userState.gold -= estate.price;
+        userState.realEstate[estateId] = true;
+        await syncUserToDB({ gold: userState.gold, realEstate: userState.realEstate });
+        renderAll();
     };
 
     // ==========================================
-    // 룰렛 (Roulette)
+    // 렌더링
     // ==========================================
-    const WHEEL_ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
-    const RED_NUMBERS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
-    const ROULETTE_CELL_W = 46;
-    let rouletteSpinning = false;
+    function fmt(n) { return Math.floor(n).toLocaleString(); }
 
-    function numberColor(n) {
-        if (n === 0) return 'green';
-        return RED_NUMBERS.has(n) ? 'red' : 'black';
+    function renderHeader() {
+        document.getElementById('goldDisplay').innerText = fmt(userState.gold) + ' G';
+        document.getElementById('netWorthDisplay').innerText = fmt(netWorth()) + ' G';
+        document.getElementById('titleBadge').innerText = currentTitle();
+        document.getElementById('loanPrincipalDisplay').innerText = fmt(userState.loanPrincipal || 0) + ' G';
+        document.getElementById('loanInterestDisplay').innerText = fmt(userState.loanUnpaidInterest || 0) + ' G';
+        document.getElementById('loanLimitDisplay').innerText = fmt(maxLoanAmount()) + ' G';
+        document.getElementById('lockedBadge').classList.toggle('hidden', !userState.isLocked);
     }
 
-    function buildRouletteStrip() {
-        const REPEATS = 4;
-        let seq = [];
-        for (let i = 0; i < REPEATS; i++) seq = seq.concat(WHEEL_ORDER);
-        return seq;
-    }
-
-    function renderRouletteStrip(seq) {
-        const track = document.getElementById('rouletteStrip');
-        track.innerHTML = seq.map(n => `<div class="roulette-cell ${numberColor(n)}">${n}</div>`).join('');
-    }
-
-    function initRouletteView() {
-        renderRouletteStrip(buildRouletteStrip());
-        document.getElementById('rouletteStrip').style.transition = 'none';
-        document.getElementById('rouletteStrip').style.transform = 'translateX(0px)';
-        onRouletteBetTypeChange();
-    }
-
-    window.onRouletteBetTypeChange = function() {
-        const type = document.getElementById('rouletteBetType').value;
-        document.getElementById('rouletteNumberGroup').classList.toggle('hidden', type !== 'number');
-    };
-
-    window.rouletteSpin = async function() {
-        if (rouletteSpinning) return;
-        const betType = document.getElementById('rouletteBetType').value;
-        const betNumber = parseInt(document.getElementById('rouletteNumberInput').value);
-        const bet = parseInt(document.getElementById('rouletteBetInput').value);
-        if (isNaN(bet) || bet <= 0) return alert('Enter a valid amount.');
-        if (bet > balance) return alert('Not enough coins!');
-        if (betType === 'number' && (isNaN(betNumber) || betNumber < 0 || betNumber > 36)) return alert('Pick a number 0-36.');
-
-        rouletteSpinning = true;
-        document.getElementById('rouletteSpinBtn').disabled = true;
-        document.getElementById('rouletteResult').innerText = '';
-        balance -= bet;
-        await syncBalanceToDB(); updateBalanceUI();
-
-        const winNumber = Math.floor(Math.random() * 37);
-        const winColor = numberColor(winNumber);
-
-        const seq = buildRouletteStrip();
-        const targetRepeat = 2;
-        const posInOrder = WHEEL_ORDER.indexOf(winNumber);
-        const targetIndex = targetRepeat * WHEEL_ORDER.length + posInOrder;
-
-        renderRouletteStrip(seq);
-        const track = document.getElementById('rouletteStrip');
-        const viewport = document.getElementById('rouletteViewport');
-        track.style.transition = 'none';
-        track.style.transform = 'translateX(0px)';
-        void track.offsetWidth; // 강제 리플로우
-
-        const viewportWidth = viewport.clientWidth;
-        const finalOffset = (viewportWidth / 2 - ROULETTE_CELL_W / 2) - targetIndex * ROULETTE_CELL_W;
-        track.style.transition = 'transform 3.2s cubic-bezier(.12,.8,.2,1)';
-        requestAnimationFrame(() => { track.style.transform = `translateX(${finalOffset}px)`; });
-
-        await sleep(3300);
-
-        let won = false, multiplier = 0;
-        if (betType === 'red') { won = winColor === 'red'; multiplier = 2; }
-        else if (betType === 'black') { won = winColor === 'black'; multiplier = 2; }
-        else if (betType === 'odd') { won = winNumber !== 0 && winNumber % 2 === 1; multiplier = 2; }
-        else if (betType === 'even') { won = winNumber !== 0 && winNumber % 2 === 0; multiplier = 2; }
-        else if (betType === 'number') { won = winNumber === betNumber; multiplier = 100; }
-
-        const resultEl = document.getElementById('rouletteResult');
-        if (won) {
-            const winAmount = bet * multiplier;
-            balance += winAmount;
-            await syncBalanceToDB(); updateBalanceUI();
-            resultEl.innerText = `🎉 ${winNumber} ${winColor.toUpperCase()} - WON ${winAmount.toLocaleString()}`;
-            resultEl.style.color = 'var(--gold)';
-            playCyberSynth('win');
-        } else {
-            resultEl.innerText = `💨 ${winNumber} ${winColor.toUpperCase()} - LOST ${bet.toLocaleString()}`;
-            resultEl.style.color = 'var(--pink)';
-            playCyberSynth('fail');
-        }
-
-        rouletteSpinning = false;
-        document.getElementById('rouletteSpinBtn').disabled = false;
-    };
-
-    // ==========================================
-    // 마켓 (Stocks & Coins) - 지갑 시간 기반 1분 단위 가격, 24시간 상시 반영
-    // ==========================================
-    const MARKET_EPOCH_MS = 60 * 1000; // 1분
-    const STOCKS = [
-        { symbol: 'AAPL',   name: 'Apple',              base: 195,    volatility: 0.06, seed: 11 },
-        { symbol: 'MSFT',   name: 'Microsoft',          base: 415,    volatility: 0.06, seed: 23 },
-        { symbol: 'TSLA',   name: 'Tesla',              base: 250,    volatility: 0.10, seed: 37 },
-        { symbol: 'AMZN',   name: 'Amazon',             base: 185,    volatility: 0.08, seed: 41 },
-        { symbol: 'NVDA',   name: 'Nvidia',             base: 118,    volatility: 0.12, seed: 47 },
-        { symbol: '005930', name: 'Samsung Electronics',base: 78000,  volatility: 0.05, seed: 59 },
-        { symbol: '000660', name: 'SK Hynix',           base: 195000, volatility: 0.09, seed: 67 },
-        { symbol: '035420', name: 'NAVER',              base: 205000, volatility: 0.07, seed: 71 },
-        { symbol: '035720', name: 'Kakao',              base: 42000,  volatility: 0.09, seed: 79 },
-        { symbol: '005380', name: 'Hyundai Motor',      base: 245000, volatility: 0.06, seed: 89 }
-    ];
-    const COINS = [
-        { symbol: 'BTC',   name: 'Bitcoin',   base: 62000, volatility: 0.35, seed: 53 },
-        { symbol: 'ETH',   name: 'Ethereum',  base: 3100,  volatility: 0.40, seed: 61 },
-        { symbol: 'SOL',   name: 'Solana',    base: 145,   volatility: 0.50, seed: 73 },
-        { symbol: 'DOGE',  name: 'Dogecoin',  base: 0.16,  volatility: 0.60, seed: 83 },
-        { symbol: 'XRP',   name: 'Ripple',    base: 0.62,  volatility: 0.45, seed: 97 },
-        { symbol: 'WEMIX', name: 'Wemix',     base: 1.2,   volatility: 0.65, seed: 101 },
-        { symbol: 'KLAY',  name: 'Klaytn',    base: 0.15,  volatility: 0.55, seed: 103 },
-        { symbol: 'ICX',   name: 'ICON',      base: 0.19,  volatility: 0.58, seed: 107 },
-        { symbol: 'BORA',  name: 'Bora',      base: 0.11,  volatility: 0.62, seed: 109 },
-        { symbol: 'MED',   name: 'Medibloc',  base: 0.012, volatility: 0.70, seed: 113 }
-    ];
-    const ALL_MARKET = [...STOCKS, ...COINS];
-
-    let marketPortfolio = {};
-    let lastMarketEpoch = null;
-    let marketTimerId = null;
-    let tickerTimerId = null;
-
-    // ===== Stock Ticker (always visible top bar) =====
-    function renderStockTicker() {
-        const tickerEl = document.getElementById('stockTicker');
-        const trackEl = document.getElementById('stockTickerTrack');
-        if (!currentUid) { tickerEl.classList.add('hidden'); return; }
-
-        const epoch = currentMarketEpoch();
-        const owned = ALL_MARKET.filter(a => (marketPortfolio[a.symbol] && marketPortfolio[a.symbol].qty > 0));
-
-        if (owned.length === 0) {
-            trackEl.innerHTML = `<span class="stock-ticker-item">NO STOCKS OWNED — VISIT MARKET TO BUY</span>`;
-        } else {
-            trackEl.innerHTML = owned.map(a => {
-                const price = priceAtEpoch(a, epoch);
-                const prevPrice = priceAtEpoch(a, epoch - 1);
-                const changePct = ((price - prevPrice) / prevPrice) * 100;
-                const up = changePct >= 0;
-                const qty = marketPortfolio[a.symbol].qty;
-                return `<span class="stock-ticker-item">${a.symbol} $${formatPrice(price)} <span class="${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</span> · ${qty.toFixed(4)} SH</span>`;
-            }).join('');
-        }
-        tickerEl.classList.remove('hidden');
-    }
-
-    function startStockTicker() {
-        renderStockTicker();
-        if (!tickerTimerId) {
-            tickerTimerId = setInterval(renderStockTicker, 15000);
-        }
-    }
-
-    function stopStockTicker() {
-        if (tickerTimerId) { clearInterval(tickerTimerId); tickerTimerId = null; }
-        document.getElementById('stockTicker').classList.add('hidden');
-    }
-
-    function marketSeededRandom(seed) {
-        let t = seed + 0x6D2B79F5;
-        t = Math.imul(t ^ t >>> 15, t | 1);
-        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-        return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    }
-
-    function currentMarketEpoch() {
-        return Math.floor(Date.now() / MARKET_EPOCH_MS);
-    }
-
-    // 실제 시각(epoch) 기반으로 계산되므로, 페이지를 안 열어놔도
-    // 다시 켰을 때 지난 시간만큼 자연스럽게 가격이 반영됨 (24시간 상시 반영)
-    function priceAtEpoch(asset, epoch) {
-        const s = asset.seed;
-        const wave = Math.sin(epoch / 37 + s) * 0.5 + Math.sin(epoch / 91 + s * 2) * 0.3 + Math.sin(epoch / 13 + s * 3) * 0.2;
-        const noise = (marketSeededRandom(s * 100003 + epoch) - 0.5) * 2;
-        const pct = wave * asset.volatility * 0.6 + noise * asset.volatility * 0.4;
-        return Math.max(0.0001, asset.base * (1 + pct));
-    }
-
-    function formatPrice(p) {
-        if (p >= 1000) return p.toLocaleString(undefined, { maximumFractionDigits: 2 });
-        if (p >= 1) return p.toFixed(2);
-        return p.toFixed(4);
-    }
-
-    const STOCK_UP_COLOR = '#ff4d4d';
-    const STOCK_DOWN_COLOR = '#4d8dff';
-
-    // epoch 하나를 하나의 캔들(시가/고가/저가/종가/거래량)로 변환
-    // 시가=직전 epoch 가격, 종가=해당 epoch 가격, 고가/저가는 시드 기반 난수로 몸통 위아래에 자연스러운 꼬리를 생성
-    function getCandle(asset, epoch) {
-        const open = priceAtEpoch(asset, epoch - 1);
-        const close = priceAtEpoch(asset, epoch);
-        const s = asset.seed;
-        const bodyRange = Math.abs(close - open) || (open * 0.002);
-        const wickUpRand = marketSeededRandom(s * 777 + epoch * 3 + 1);
-        const wickDownRand = marketSeededRandom(s * 777 + epoch * 3 + 2);
-        const volRand = marketSeededRandom(s * 777 + epoch * 3 + 3);
-        const high = Math.max(open, close) + wickUpRand * bodyRange * 0.9;
-        const low = Math.max(0.00001, Math.min(open, close) - wickDownRand * bodyRange * 0.9);
-        const volume = (0.3 + volRand * 0.7) * (1 + (bodyRange / open) * 25);
-        return { epoch, open, high, low, close, volume };
-    }
-
-    // ===== 미니 캔들 미리보기 (클릭하면 전체 캔들차트 팝업) =====
-    const CHART_BAR_COUNT = 18;
-    function renderMiniChart(asset, epoch) {
-        const count = CHART_BAR_COUNT;
-        const candles = [];
-        for (let i = count - 1; i >= 0; i--) candles.push(getCandle(asset, epoch - i));
-        const allVals = candles.flatMap(c => [c.high, c.low]);
-        const min = Math.min(...allVals);
-        const max = Math.max(...allVals);
-        const range = (max - min) || (max * 0.01) || 1;
-        const w = 120, h = 42;
-        const slot = w / count;
-        const bodyW = Math.max(1.5, slot * 0.55);
-        const scaleY = v => 2 + (h - 4) - ((v - min) / range) * (h - 4);
-        let shapes = '';
-        candles.forEach((c, i) => {
-            const x = i * slot + slot / 2;
-            const up = c.close >= c.open;
-            const color = up ? STOCK_UP_COLOR : STOCK_DOWN_COLOR;
-            const yHigh = scaleY(c.high), yLow = scaleY(c.low);
-            const yTop = scaleY(Math.max(c.open, c.close));
-            const yBot = scaleY(Math.min(c.open, c.close));
-            shapes += `<line x1="${x.toFixed(1)}" y1="${yHigh.toFixed(1)}" x2="${x.toFixed(1)}" y2="${yLow.toFixed(1)}" stroke="${color}" stroke-width="1"/>`;
-            shapes += `<rect x="${(x - bodyW / 2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bodyW.toFixed(1)}" height="${Math.max(1, yBot - yTop).toFixed(1)}" fill="${color}"/>`;
+    function sparklinePath(stock) {
+        const epoch = currentPriceEpoch();
+        const points = [];
+        for (let i = 20; i >= 0; i--) points.push(priceAtEpoch(stock, epoch - i));
+        const min = Math.min(...points), max = Math.max(...points);
+        const range = (max - min) || 1;
+        const w = 200, h = 40;
+        const step = w / (points.length - 1);
+        const coords = points.map((p, i) => {
+            const x = i * step;
+            const y = h - ((p - min) / range) * h;
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
         });
-        return `<svg class="market-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">${shapes}</svg>`;
+        const up = points[points.length - 1] >= points[0];
+        return { d: 'M ' + coords.join(' L '), up };
     }
 
-    // ===== 캔들차트 플로팅 윈도우 매니저 =====
-    // 여러 종목을 동시에 띄워놓고, 다른 게임 화면으로 이동해도 계속 떠 있음
-    const chartWindows = {}; // symbol -> window state
-    let chartWinZCounter = 1000;
-    let chartWinCascade = 0;
-
-    window.openChartModal = function(symbol) {
-        if (chartWindows[symbol]) {
-            bringChartWindowToFront(chartWindows[symbol]);
-            return;
-        }
-        const asset = ALL_MARKET.find(a => a.symbol === symbol);
-        if (!asset) return;
-
-        const layer = document.getElementById('chartWindowLayer');
-        const el = document.createElement('div');
-        el.className = 'chart-window';
-        const cascadeOffset = (chartWinCascade++ % 6) * 28;
-        const initW = 420, initH = 320;
-        el.style.left = (40 + cascadeOffset) + 'px';
-        el.style.top = (90 + cascadeOffset) + 'px';
-        el.style.width = initW + 'px';
-        el.style.height = initH + 'px';
-        el.innerHTML = `
-            <div class="chart-window-titlebar">
-                <span>${asset.name} (${asset.symbol})</span>
-                <span class="chart-window-price"></span>
-                <div class="chart-window-controls">
-                    <button class="chart-win-btn" data-action="fullscreen">⛶</button>
-                    <button class="chart-win-btn" data-action="close">✕</button>
-                </div>
-            </div>
-            <div class="chart-window-body">
-                <div class="chart-window-canvas-wrap">
-                    <canvas></canvas>
-                    <div class="chart-window-resize"></div>
-                </div>
-            </div>
-        `;
-        layer.appendChild(el);
-
-        const win = {
-            symbol, asset, el,
-            canvas: el.querySelector('canvas'),
-            priceEl: el.querySelector('.chart-window-price'),
-            viewCount: 60,
-            offset: 0,
-            dragging: false,
-            resizing: false,
-            fullscreen: false,
-            prevBounds: null,
-            refreshTimer: null
-        };
-        chartWindows[symbol] = win;
-        bringChartWindowToFront(win);
-        setupChartWindowEvents(win);
-        setupChartWindowCanvas(win);
-        drawChartWindow(win);
-        win.refreshTimer = setInterval(() => drawChartWindow(win), 15000);
-    };
-
-    function bringChartWindowToFront(win) {
-        chartWinZCounter += 1;
-        win.el.style.zIndex = chartWinZCounter;
-    }
-
-    function closeChartWindow(win) {
-        if (win.refreshTimer) clearInterval(win.refreshTimer);
-        win.el.remove();
-        delete chartWindows[win.symbol];
-    }
-
-    function setupChartWindowCanvas(win) {
-        const wrap = win.canvas.parentElement;
-        const cssWidth = wrap.clientWidth;
-        const cssHeight = wrap.clientHeight;
-        const dpr = window.devicePixelRatio || 1;
-        win.canvas.width = Math.round(cssWidth * dpr);
-        win.canvas.height = Math.round(cssHeight * dpr);
-        win.canvas._dpr = dpr;
-        win.canvas._cssWidth = cssWidth;
-        win.canvas._cssHeight = cssHeight;
-    }
-
-    function setupChartWindowEvents(win) {
-        const el = win.el;
-        const titlebar = el.querySelector('.chart-window-titlebar');
-        const resizeHandle = el.querySelector('.chart-window-resize');
-
-        el.addEventListener('mousedown', () => bringChartWindowToFront(win));
-
-        el.querySelectorAll('.chart-win-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const action = btn.dataset.action;
-                if (action === 'close') closeChartWindow(win);
-                if (action === 'fullscreen') toggleChartWindowFullscreen(win);
-            });
-        });
-
-        // 타이틀바 드래그 = 창 이동
-        let moveStartX = 0, moveStartY = 0, moveStartLeft = 0, moveStartTop = 0, moving = false;
-        titlebar.addEventListener('mousedown', (e) => {
-            if (e.target.closest('.chart-win-btn') || win.fullscreen) return;
-            moving = true;
-            moveStartX = e.clientX; moveStartY = e.clientY;
-            moveStartLeft = el.offsetLeft; moveStartTop = el.offsetTop;
-        });
-        window.addEventListener('mousemove', (e) => {
-            if (!moving) return;
-            el.style.left = (moveStartLeft + (e.clientX - moveStartX)) + 'px';
-            el.style.top = (moveStartTop + (e.clientY - moveStartY)) + 'px';
-        });
-        window.addEventListener('mouseup', () => { moving = false; });
-
-        // 우측 하단 핸들 드래그 = 창 크기 조절(줄이기/키우기)
-        let resizeStartX = 0, resizeStartY = 0, resizeStartW = 0, resizeStartH = 0;
-        resizeHandle.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-            if (win.fullscreen) return;
-            win.resizing = true;
-            resizeStartX = e.clientX; resizeStartY = e.clientY;
-            resizeStartW = el.offsetWidth; resizeStartH = el.offsetHeight;
-        });
-        window.addEventListener('mousemove', (e) => {
-            if (!win.resizing) return;
-            const newW = Math.max(260, resizeStartW + (e.clientX - resizeStartX));
-            const newH = Math.max(220, resizeStartH + (e.clientY - resizeStartY));
-            el.style.width = newW + 'px';
-            el.style.height = newH + 'px';
-            setupChartWindowCanvas(win);
-            drawChartWindow(win);
-        });
-        window.addEventListener('mouseup', () => {
-            if (win.resizing) { win.resizing = false; }
-        });
-
-        // 캔버스 위 좌클릭 드래그 = 차트 이동(팬), 휠 = 확대/축소
-        const canvas = win.canvas;
-        let dragStartX = 0, dragStartOffset = 0;
-        canvas.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return;
-            e.stopPropagation();
-            bringChartWindowToFront(win);
-            win.dragging = true;
-            dragStartX = e.clientX;
-            dragStartOffset = win.offset;
-            canvas.classList.add('dragging');
-        });
-        window.addEventListener('mousemove', (e) => {
-            if (!win.dragging) return;
-            const candleSlot = win.canvas._cssWidth / win.viewCount;
-            const deltaCandles = Math.round((e.clientX - dragStartX) / candleSlot);
-            win.offset = Math.max(0, dragStartOffset + deltaCandles);
-            drawChartWindow(win);
-        });
-        window.addEventListener('mouseup', () => {
-            if (win.dragging) { win.dragging = false; canvas.classList.remove('dragging'); }
-        });
-        canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const dir = e.deltaY > 0 ? 1 : -1;
-            win.viewCount = Math.min(200, Math.max(20, win.viewCount + dir * 6));
-            drawChartWindow(win);
-        }, { passive: false });
-
-        window.addEventListener('resize', () => {
-            if (win.fullscreen) { setupChartWindowCanvas(win); drawChartWindow(win); }
-        });
-    }
-
-    function toggleChartWindowFullscreen(win) {
-        const el = win.el;
-        if (!win.fullscreen) {
-            win.prevBounds = { left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height };
-            el.classList.add('fullscreen');
-            win.fullscreen = true;
-        } else {
-            el.classList.remove('fullscreen');
-            if (win.prevBounds) {
-                el.style.left = win.prevBounds.left;
-                el.style.top = win.prevBounds.top;
-                el.style.width = win.prevBounds.width;
-                el.style.height = win.prevBounds.height;
-            }
-            win.fullscreen = false;
-        }
-        setupChartWindowCanvas(win);
-        drawChartWindow(win);
-    }
-
-    function drawChartWindow(win) {
-        const canvas = win.canvas;
-        const ctx = canvas.getContext('2d');
-        const dpr = canvas._dpr || 1;
-        const w = canvas._cssWidth;
-        const h = canvas._cssHeight;
-        ctx.save();
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.clearRect(0, 0, w, h);
-
-        const nowEpoch = currentMarketEpoch();
-        const rightEpoch = nowEpoch - win.offset;
-        const leftEpoch = rightEpoch - win.viewCount + 1;
-        const candles = [];
-        for (let e = leftEpoch; e <= rightEpoch; e++) candles.push(getCandle(win.asset, e));
-
-        const volumeAreaH = h * 0.2;
-        const priceAreaH = h - volumeAreaH - 8;
-        const allVals = candles.flatMap(c => [c.high, c.low]);
-        let min = Math.min(...allVals), max = Math.max(...allVals);
-        const pad = (max - min) * 0.08 || max * 0.01 || 1;
-        min -= pad; max += pad;
-        const range = max - min;
-
-        const slot = w / candles.length;
-        const bodyW = Math.max(1, slot * 0.6);
-        const scaleY = v => 4 + priceAreaH - ((v - min) / range) * priceAreaH;
-
-        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-        ctx.lineWidth = 1;
-        for (let i = 0; i <= 4; i++) {
-            const y = 4 + (priceAreaH / 4) * i;
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-        }
-
-        function drawMA(period, color) {
-            ctx.strokeStyle = color; ctx.lineWidth = 1.3; ctx.beginPath();
-            let started = false;
-            candles.forEach((c, i) => {
-                if (i < period - 1) return;
-                let sum = 0;
-                for (let k = 0; k < period; k++) sum += candles[i - k].close;
-                const avg = sum / period;
-                const x = i * slot + slot / 2;
-                const y = scaleY(avg);
-                if (!started) { ctx.moveTo(x, y); started = true; } else { ctx.lineTo(x, y); }
-            });
-            ctx.stroke();
-        }
-        drawMA(5, '#f5a442');
-        drawMA(20, '#b18cf5');
-
-        candles.forEach((c, i) => {
-            const x = i * slot + slot / 2;
-            const up = c.close >= c.open;
-            const color = up ? STOCK_UP_COLOR : STOCK_DOWN_COLOR;
-            ctx.strokeStyle = color;
-            ctx.beginPath();
-            ctx.moveTo(x, scaleY(c.high));
-            ctx.lineTo(x, scaleY(c.low));
-            ctx.stroke();
-            const yTop = scaleY(Math.max(c.open, c.close));
-            const yBot = scaleY(Math.min(c.open, c.close));
-            ctx.fillStyle = color;
-            ctx.fillRect(x - bodyW / 2, yTop, bodyW, Math.max(1, yBot - yTop));
-        });
-
-        const lastClose = candles[candles.length - 1].close;
-        const lastY = scaleY(lastClose);
-        ctx.strokeStyle = 'rgba(249,226,175,0.6)';
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath(); ctx.moveTo(0, lastY); ctx.lineTo(w, lastY); ctx.stroke();
-        ctx.setLineDash([]);
-
-        const volMax = Math.max(...candles.map(c => c.volume)) || 1;
-        const volTop = h - volumeAreaH;
-        candles.forEach((c, i) => {
-            const x = i * slot + slot / 2;
-            const up = c.close >= c.open;
-            const vh = (c.volume / volMax) * (volumeAreaH - 4);
-            ctx.fillStyle = up ? 'rgba(255,77,77,0.55)' : 'rgba(77,141,255,0.55)';
-            ctx.fillRect(x - bodyW / 2, h - vh, bodyW, vh);
-        });
-        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-        ctx.beginPath(); ctx.moveTo(0, volTop); ctx.lineTo(w, volTop); ctx.stroke();
-
-        ctx.restore();
-
-        const prevClose = candles.length > 1 ? candles[candles.length - 2].close : lastClose;
-        const up = lastClose >= prevClose;
-        win.priceEl.innerText = `$${formatPrice(lastClose)}`;
-        win.priceEl.style.color = up ? STOCK_UP_COLOR : STOCK_DOWN_COLOR;
-    }
-
-    function initMarketView() {
-        lastMarketEpoch = currentMarketEpoch();
-        renderMarketLists();
-        if (!marketTimerId) {
-            marketTimerId = setInterval(() => {
-                const e = currentMarketEpoch();
-                if (e !== lastMarketEpoch) {
-                    lastMarketEpoch = e;
-                    renderMarketLists();
-                }
-            }, 15000);
-        }
-    }
-
-    function themedAssetName(asset) {
-        const theme = getTheme(equippedTheme);
-        return (theme && theme.marketNames && theme.marketNames[asset.symbol]) || asset.name;
-    }
-
-    function renderMarketList(containerId, assets) {
-        const container = document.getElementById(containerId);
-        const epoch = currentMarketEpoch();
-        container.innerHTML = assets.map(a => {
-            const price = priceAtEpoch(a, epoch);
-            const prevPrice = priceAtEpoch(a, epoch - 1);
+    function renderStocks() {
+        const grid = document.getElementById('stocksGrid');
+        const epoch = currentPriceEpoch();
+        grid.innerHTML = STOCKS.map(stock => {
+            const price = priceAtEpoch(stock, epoch);
+            const prevPrice = priceAtEpoch(stock, epoch - 1);
             const changePct = ((price - prevPrice) / prevPrice) * 100;
             const up = changePct >= 0;
-            const holding = marketPortfolio[a.symbol] || { qty: 0, avgCost: 0 };
-            const qty = holding.qty;
-            const holdingValue = qty * price;
-
-            let holdingLine = 'No holdings';
-            if (qty > 0) {
-                const pnlPct = holding.avgCost > 0 ? ((price - holding.avgCost) / holding.avgCost) * 100 : 0;
-                const pnlAmount = (price - holding.avgCost) * qty;
-                const pnlUp = pnlAmount >= 0;
-                holdingLine = `${qty.toFixed(4)} ($${holdingValue.toFixed(2)}) · Buy $${formatPrice(holding.avgCost)} <span class="market-change ${pnlUp ? 'up' : 'down'}">${pnlUp ? '▲' : '▼'} ${Math.abs(pnlPct).toFixed(2)}% (${pnlAmount >= 0 ? '+' : '-'}$${Math.abs(pnlAmount).toFixed(2)})</span>`;
-            }
-
+            const spark = sparklinePath(stock);
+            const owned = userState.portfolio[stock.id] || 0;
             return `
-            <div class="market-row">
-                <div class="market-info">
-                    <div class="market-name">${themedAssetName(a)} <span class="market-ticker">${a.symbol}</span></div>
-                    <div class="market-price">$${formatPrice(price)}<span class="market-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</span></div>
-                    <div class="market-holding">${holdingLine}</div>
+            <div class="stock-card">
+                <div class="row1">
+                    <div>
+                        <div class="name">${stock.name}</div>
+                        <div class="ticker">${stock.ticker}</div>
+                    </div>
+                    <div>
+                        <div class="price num">${fmt(price)} G</div>
+                        <div class="change num ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</div>
+                    </div>
                 </div>
-                <div class="market-chart-wrap" onclick="openChartModal('${a.symbol}')">${renderMiniChart(a, epoch)}</div>
-                <div class="market-actions">
-                    <input type="number" class="pixel-input market-amount" id="amt-${a.symbol}" placeholder="kee" min="1">
-                    <button class="btn-main pixel-btn" onclick="marketBuy('${a.symbol}')">BUY</button>
-                    <button class="btn-secondary pixel-btn" onclick="marketBuyMax('${a.symbol}')">BUY MAX</button>
-                    <button class="btn-secondary pixel-btn" onclick="marketSellAll('${a.symbol}')">SELL ALL</button>
+                <svg class="sparkline" viewBox="0 0 200 40" preserveAspectRatio="none">
+                    <path d="${spark.d}" fill="none" stroke="${spark.up ? '#3f8f63' : '#a8402f'}" stroke-width="2"/>
+                </svg>
+                <div class="holding">보유: ${owned}주 · 평가액 ${fmt(owned * price)} G</div>
+                <div class="trade-row">
+                    <input class="qty" type="number" id="qty-${stock.id}" placeholder="수량" min="1" value="1">
+                    <button class="btn btn-sm" onclick="buyStock('${stock.id}')">매수</button>
+                    <button class="btn btn-ghost btn-sm" onclick="sellStock('${stock.id}')">매도</button>
                 </div>
             </div>`;
         }).join('');
     }
 
-    function renderMarketLists() {
-        renderMarketList('stockList', STOCKS);
-        renderMarketList('coinList', COINS);
+    function renderNews() {
+        const { news, stage, progressPct } = currentNewsState();
+        const stageNames = ['', '소문', '사태 전개', '최종 결과'];
+        const stageClasses = ['', 's1', 's2', 's3'];
+        const badge = document.getElementById('newsStageBadge');
+        badge.innerText = stageNames[stage];
+        badge.className = 'news-stage ' + stageClasses[stage];
+
+        const stockName = getStock(news.stock).name;
+        const text = stage === 1 ? news.s1 : stage === 2 ? news.s2 : news.s3;
+        document.getElementById('newsHeadline').innerHTML = `<span class="stock-tag">[${stockName}]</span> ${text}`;
+
+        const msLeft = Math.max(0, Math.ceil((NEWS_STAGE_MS - (progressPct / 100) * NEWS_STAGE_MS) / 1000));
+        document.getElementById('newsTimer').innerText = `다음 단계까지 ${msLeft}초`;
+        document.getElementById('newsBarFill').style.width = progressPct + '%';
     }
 
-    window.switchMarketTab = function(tab) {
-        document.getElementById('stockList').classList.toggle('hidden', tab !== 'stocks');
-        document.getElementById('coinList').classList.toggle('hidden', tab !== 'coins');
-        document.getElementById('marketTabStocks').classList.toggle('active', tab === 'stocks');
-        document.getElementById('marketTabCoins').classList.toggle('active', tab === 'coins');
-    };
-
-    async function syncPortfolioToDB() {
-        if (!currentUid) return;
-        await db.ref('users/' + currentUid + '/portfolio').set(marketPortfolio);
+    function renderEstates() {
+        document.getElementById('estateList').innerHTML = ESTATES.map(e => {
+            const owned = userState.realEstate[e.id];
+            const actionHtml = owned
+                ? `<span class="price">보유중</span>`
+                : `<button class="btn btn-sm" onclick="buyEstate('${e.id}')">${fmt(e.price)} G</button>`;
+            return `
+            <div class="estate-item">
+                <div class="top">
+                    <span class="name">${e.name}</span>
+                    ${actionHtml}
+                </div>
+                <div class="desc">${e.desc}</div>
+            </div>`;
+        }).join('');
     }
 
-    window.marketBuy = async function(symbol) {
-        const input = document.getElementById(`amt-${symbol}`);
-        const amount = parseFloat(input.value);
-        if (isNaN(amount) || amount <= 0) return alert('Enter a valid amount.');
-        if (amount > balance) return alert('Not enough coins!');
-        const asset = ALL_MARKET.find(a => a.symbol === symbol);
-        const price = priceAtEpoch(asset, currentMarketEpoch());
-        const qty = amount / price;
-        const holding = marketPortfolio[symbol] || { qty: 0, avgCost: 0 };
-        const newQty = holding.qty + qty;
-        const newAvgCost = (holding.qty * holding.avgCost + qty * price) / newQty;
-        marketPortfolio[symbol] = { qty: newQty, avgCost: newAvgCost };
-        balance -= amount;
-        await syncBalanceToDB();
-        await syncPortfolioToDB();
-        updateBalanceUI();
-        input.value = '';
-        renderMarketLists();
-        renderStockTicker();
-    };
+    function renderAll() {
+        renderHeader();
+        renderStocks();
+        renderNews();
+        renderEstates();
+    }
 
-    window.marketBuyMax = async function(symbol) {
-        const amount = balance;
-        if (amount <= 0) return alert('Not enough coins!');
-        const asset = ALL_MARKET.find(a => a.symbol === symbol);
-        const price = priceAtEpoch(asset, currentMarketEpoch());
-        const qty = amount / price;
-        const holding = marketPortfolio[symbol] || { qty: 0, avgCost: 0 };
-        const newQty = holding.qty + qty;
-        const newAvgCost = (holding.qty * holding.avgCost + qty * price) / newQty;
-        marketPortfolio[symbol] = { qty: newQty, avgCost: newAvgCost };
-        balance -= amount;
-        await syncBalanceToDB();
-        await syncPortfolioToDB();
-        updateBalanceUI();
-        renderMarketLists();
-        renderStockTicker();
-    };
+    // ==========================================
+    // 리더보드 (실시간)
+    // ==========================================
+    function startLeaderboardSync() {
+        db.ref(DB_ROOT).on('value', (snap) => {
+            const data = snap.val();
+            if (!data) return;
+            const epoch = currentPriceEpoch();
+            const rows = Object.keys(data).map(uid => {
+                const u = normalizeUserState(data[uid]);
+                let portfolioValue = 0;
+                for (const stock of STOCKS) {
+                    portfolioValue += (u.portfolio[stock.id] || 0) * priceAtEpoch(stock, epoch);
+                }
+                const worth = u.gold + portfolioValue - (u.loanPrincipal || 0) - (u.loanUnpaidInterest || 0);
+                return { uid, nickname: u.nickname, worth };
+            }).sort((a, b) => b.worth - a.worth).slice(0, 15);
 
-    window.marketSellAll = async function(symbol) {
-        const holding = marketPortfolio[symbol] || { qty: 0, avgCost: 0 };
-        if (holding.qty <= 0) return alert('No holdings to sell.');
-        const asset = ALL_MARKET.find(a => a.symbol === symbol);
-        const price = priceAtEpoch(asset, currentMarketEpoch());
-        const proceeds = holding.qty * price;
-        balance += proceeds;
-        marketPortfolio[symbol] = { qty: 0, avgCost: 0 };
-        await syncBalanceToDB();
-        await syncPortfolioToDB();
-        updateBalanceUI();
-        renderMarketLists();
-        renderStockTicker();
-    };
+            document.getElementById('rankList').innerHTML = rows.map((r, i) => `
+                <li class="rank-row ${r.uid === currentUid ? 'me' : ''}">
+                    <span class="name">${i + 1}. ${r.nickname}</span>
+                    <span class="worth num">${fmt(r.worth)} G</span>
+                </li>`).join('');
+        });
+    }
+
+    // ==========================================
+    // 타이머 (뉴스/시세 UI 갱신 + 패시브 정산)
+    // ==========================================
+    let uiTimerId = null;
+    let tickTimerId = null;
+    function startTimers() {
+        stopTimers();
+        uiTimerId = setInterval(() => { renderNews(); renderStocks(); renderHeader(); }, 1000);
+        tickTimerId = setInterval(applyPassiveTick, 5000);
+        startLeaderboardSync();
+    }
+    function stopTimers() {
+        if (uiTimerId) clearInterval(uiTimerId);
+        if (tickTimerId) clearInterval(tickTimerId);
+        db.ref(DB_ROOT).off();
+        uiTimerId = null; tickTimerId = null;
+    }
 </script>
 </body>
 </html>
